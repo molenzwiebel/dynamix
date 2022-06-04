@@ -1,0 +1,50 @@
+{
+    "editor.wordWrap": "off",
+    "editor.wordWrapColumn": 100,
+    "editor.rulers": [
+        100,
+        120
+    ],
+    "[latex]": {
+        "editor.wordWrap": "bounded",
+        "editor.renderWhitespace": "all",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false,
+        "editor.formatOnSave": false
+    },
+    "editor.wordBasedSuggestions": false,
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (xelatex)",
+            "tools": [
+                "xelatexmk"
+            ]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "xelatexmk",
+            "command": "latexmk",
+            "args": [
+                "-synctex=1",
+                "-shell-escape",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-xelatex",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ]
+        }
+    ],
+    "latex-workshop.chktex.args.active": [
+        "-wall",
+        "-n22",
+        "-n30",
+        "-n46",
+        "-e16",
+        "-q"
+    ],
+    "latex-workshop.latex.outDir": "../out",
+    "html.format.wrapLineLength": 100
+}

@@ -1,0 +1,71 @@
+% !TEX root = ../document.tex
+
+\chapter{\label{ch:introduction}Introduction}
+
+\todo{not entirely sure about this introduction}
+
+While the advent of computing has brought with it a large swathe of programming languages, wildly varying in levels of abstraction, capabilities, and usecases, we can reduce each of them down to just three components acting in unison to form a "programming language": the grammar, the static semantics, and the dynamic semantics.
+
+The grammar governs how the programmer writes code. It specifies what lexical structures the language expects, what keywords, operators, literals, expressions it supports, and how the language converts this textual representation to a format more suitable to work on, the \ac{AST}.
+
+The static semantics govern what programs have \textit{meaning}. It encompasses all rules that can be checked at compile time, such as the validity of name binding within the program and whether it does not violate any typing rules. Some languages thrive around (strict) static semantics, whereas other languages, particularly dynamic scripting languages, may not have any at all.
+
+Finally, the dynamic semantics of a language describe \textit{how} a program runs. It formalizes that an addition of two numbers will indeed lead to a single number that is the sum of the two. At the same time, it describes what might happen to the result should the addition of the numbers overflow.\\
+
+% ---
+
+It is the collection of these properties that forms a programming language, not a specific implementation. Anyone can write a compiler for the \Cplusplus 98 programming language, as long as they adhere to the formal specification of \Cplusplus 98 as written in ISO/IEC 14882:1998 \cite{ISO:1998:IIP}. Someone wanting to implement a new JavaScript engine needs only to follow ECMA-262 \cite{ecma1999262}. Any virtual machine compliant with the Java Language Specification \cite{10.5555/2636997} is able to run any and all valid Java programs.
+
+That's the theory, at least. In practice, bugs in implementations, ambiguities in the natural language used in the specification, as well as choices left up to the implementation mean that even trivial \Cplusplus programs that run flawlessly when compiled by GCC \cite{gcc} may behave entirely different when compiled by LLVM's Clang \cite{clang}. Which one of the observed behaviors is the \textit{correct} one can be judged by consulting the specification.
+
+Many other programming languages, even extremely popular ones, do not have a specification. Understandable, given that it is a herculean effort to formally describe every construct and behavior in one's programming language. For these languages, the reference implementation of the language \textit{is} the specification. Creating an alternative implementation of these programming languages amounts to carefully observing and replicating what the reference compiler does, and ensuring that this behavior stays consistent with the reference as both implementations continue to improve and evolve.\\
+
+\todo{needs a better segue into dynamix, something about why dynamix helps solve these issues}
+
+% ---
+
+In this thesis, we introduce a new \ac{DSL} called Dynamix for use in the Spoofax language workbench \cite{Spoofax2021}. Dynamix aims to unify the specification and implementation of the dynamic semantics of a programming language, by offering a language that is high-level enough to function as a formal specification of the language, while at the same time allowing this specification to be turned into an efficient compiler for the language.
+
+An example of Dynamix in action can be seen in \cref{fig:dynamix_addition}. It describes that the addition operator should be implemented by evaluating the values of each sub-term in left-to-right order, then yielding the 32-bit signed addition result of the two values. The Dynamix source has exactly the same behavior as the analogous formal definition.
+
+\begin{figure}
+  \begin{prooftree}
+    \AxiomC{$G \vdash l \Downarrow i_1 $}
+    \AxiomC{$G \vdash r \Downarrow i_2 $}
+    \AxiomC{$v = i_1 +_{\textrm{signed 32-bit}} i_2$}
+    \TrinaryInfC{$G \vdash l \textrm{ + } r \Downarrow v$}
+  \end{prooftree}
+  \begin{dynamix*}{firstline=3,firstnumber=1}
+module main
+
+rules
+  compileExpr(Add(left, right)) = {
+    lv <- compileExpr(left)
+    rv <- compileExpr(right)
+    #i32-add(lv, rv)
+  }
+  \end{dynamix*}
+  \caption{A formal dynamic specification for the behavior of integer addition (top), and an equivalent Dynamix specification expressing the same behavior (bottom).}
+  \label{fig:dynamix_addition}
+\end{figure}
+
+Dynamix is designed to be used within the Spoofax language workbench \cite{Spoofax2021}, an environment designed for the design and implementation of (domain-specific) programming languages. Within Spoofax, Dynamix can provide additional static analysis based on the structure of the source language, interact with the results of static analysis, and be invoked as part of a language implementation test-suite.\\
+
+\noindent This thesis makes the following contributions:
+
+\begin{itemize}
+  \item We introduce Tim, a language-agnostic intermediate representation for programs and the output format for Dynamix.
+  \item We introduce Dynamix, a programming meta-language used for describing the dynamic specification of a programming language.
+  \item We present two \todo{three?} case studies that evaluate the performance and capabilities of Dynamix by implementing Dynamix specifications for the ChocoPy programming language \cite{PhadyeSH19-SPLASHE} extended with exceptions, and a subset of the Stratego \cite{Visser05-SCAM} programming language.
+\end{itemize}
+
+\noindent The remainder of this document is structured as follows:
+
+\begin{itemize}
+  \item We briefly introduce the Spoofax language workbench and discuss aspects of it relevant for the design of Dynamix (\cref{ch:spoofax}).
+  \item We discuss desirable properties for a dynamic specification meta-language and how it fits within the scope of the Spoofax language workbench (\cref{ch:design}).
+  \item We discuss the grammar, semantics, and runtime of the Tim intermediate representation (\cref{ch:tim}).
+  \item We discuss the grammar, semantics, and runtime of the Dynamix meta-language (\cref{ch:dynamix}).
+  \item We evaluate the performance and capabilities of Dynamix by discussing two different case studies implementing a specification for ChocoPy \cite{PhadyeSH19-SPLASHE} and a subset of Stratego \cite{Visser05-SCAM} respectively.
+  \item We discuss how Dynamix performs compared to alternative implementations and competing tools for the specification of runtime semantics (\cref{ch:related_work}).
+\end{itemize}

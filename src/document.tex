@@ -1,0 +1,75 @@
+% Fix: From https://tex.stackexchange.com/a/508995/108670
+\RequirePackage{snapshot}
+\makeatletter
+\def\snap@providesfile#1[#2]{%
+  \wlog{File: #1 #2}%
+  \if\expandafter\snap@graphic@test\expanded{#2}@@\@nil
+    \snap@record@graphic#1\relax #2 (type ??)\@nil
+  \else
+    \expandafter\xdef\csname ver@#1\endcsname{#2}%
+  \fi
+  \endgroup
+}
+\makeatother
+
+\documentclass[twoside,a4paper,11pt]{memoir}
+\usepackage{document}
+\usepackage[outputdir=../out]{minted}
+\usepackage{todonotes}
+\usepackage{bussproofs}
+\usepackage{subcaption}
+\usepackage{amsfonts}
+\usepackage{formal-grammar}
+\usepackage{lineno}
+\usepackage{soul}
+% \usepackage{syntax}
+
+% Prevent footnotes from splitting across pages.
+\interfootnotelinepenalty=100000
+
+% Add \@ _before_ the terminating period of the sentence (`UI\@. Test`)
+% to allow inter-sentence spacing when the sentence ends with a capital letter.
+
+\newminted[dynamix]{spoofax_lexer.py -O "parseTable=spoofax/dynamix/sdf.tbl,esv=spoofax/dynamix/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[sdf3]{spoofax_lexer.py -O "parseTable=spoofax/sdf3/sdf.tbl,esv=spoofax/sdf3/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[statix]{spoofax_lexer.py -O "parseTable=spoofax/statix/sdf.tbl,esv=spoofax/statix/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[stratego]{spoofax_lexer.py -O "parseTable=spoofax/stratego/sdf.tbl,esv=spoofax/stratego/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[tim]{spoofax_lexer.py -O "parseTable=spoofax/tim/sdf.tbl,esv=spoofax/tim/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[mat]{spoofax_lexer.py -O "parseTable=spoofax/mat/sdf.tbl,esv=spoofax/mat/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[plain]{text}{linenos,frame=single,framesep=2pt}
+
+\addbibresource{document.bib}
+\addbibresource{researchr.bib}
+
+\input{metadata}
+
+\begin{document}
+% \linenumbers
+
+\frontmatter
+\thispagestyle{empty}
+\maketitle
+\makeformaltitlepages{\input{sections/000-abstract}}
+
+\include{sections/010-preface}
+
+\cleardoublepage\tableofcontents
+% \cleardoublepage\listoffigures
+% \cleardoublepage\listoftables
+\cleardoublepage\listoftodos
+\cleardoublepage\mainmatter{}
+
+\include{sections/100-introduction}
+\include{sections/200-spoofax}
+\include{sections/300-design}
+\include{sections/400-tim}
+\include{sections/500-dynamix}
+\include{sections/600-case-studies}
+\include{sections/700-related-work}
+\include{sections/800-conclusion}
+
+\printbibliography{}
+
+\include{acronyms}
+
+\end{document}

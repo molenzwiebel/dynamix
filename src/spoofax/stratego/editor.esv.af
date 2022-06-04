@@ -1,0 +1,610 @@
+Module(
+  "editor"
+, Imports([Import("Syntax"), Import("Analysis")])
+, [ Language(
+      ""
+    , [Extensions(Values(["str2"])), SemanticProvider("target/metaborg/stratego.jar")]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Codegen\""))
+        , [OpenEditor(), Source()]
+        , [Action(String("\"Show Java files\""), Strategy("debug-show-java"), [])]
+        )
+      ]
+    )
+  , Language(
+      ""
+    , [ Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("Module")])
+      , LineCommentPrefix(String("\"//\""))
+      , BlockCommentDefs(BlockCommentDef(String("\"/*\""), "*", String("\"*/\"")))
+      , FenceDefs(
+          [FenceDef("[", "]"), FenceDef("(", ")"), FenceDef("{", "}")]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Syntax\""))
+        , [OpenEditor(), Source()]
+        , [ Action(String("\"Format\""), Strategy("editor-format"), [])
+          , Action(String("\"Show parsed AST\""), Strategy("debug-show-aterm"), [])
+          ]
+        )
+      , ToolbarMenu(
+          Label(String("\"Desugar\""))
+        , [OpenEditor(), Source()]
+        , [ Action(String("\"Show desugared AST (incr. comp.)\""), Strategy("debug-show-desugared"), [])
+          , Action(String("\"Show desugared AST (batch comp.)\""), Strategy("debug-show-ctree"), [])
+          ]
+        )
+      ]
+    )
+  , Views(
+      [OutlineView(Strategy("editor-outline"), [Source()], Some(ExpandToLevel("3")))]
+    )
+  , Colorer(
+      " Extension"
+    , [ ColorRule(ConstructorOnly(Constructor("StringEscape1")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringEscape2")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringEscape3")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringEscape4")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Str")), AttributeRef("blue"))
+      , ColorRule(ConstructorOnly(Constructor("StrCong")), AttributeRef("blue"))
+      , ColorRule(ConstructorOnly(Constructor("QStr")), AttributeRef("blue"))
+      , ColorRule(ConstructorOnly(Constructor("QDollar")), AttributeRef("blue"))
+      , ColorRule(ConstructorOnly(Constructor("QBr")), AttributeRef("gray"))
+      , ColorDef(
+          "strategydefs"
+        , Attribute(ColorRGB("0", "64", "128"), NoColor(), BOLD())
+        )
+      , ColorRule(Sort("RuleDef"), AttributeRef("strategydefs"))
+      , ColorRule(Sort("RuleDec"), AttributeRef("strategydefs"))
+      , ColorRule(Sort("StrategyDef"), AttributeRef("strategydefs"))
+      , ColorRule(Sort("SDefT"), AttributeRef("strategydefs"))
+      , ColorRule(Sort("RDefT"), AttributeRef("strategydefs"))
+      , ColorRule(Sort("Overlay"), AttributeRef("strategydefs"))
+      , ColorRule(ConstructorOnly(Constructor("DefHasTypeNoArgs")), AttributeRef("strategydefs"))
+      , ColorRule(ConstructorOnly(Constructor("DefHasType")), AttributeRef("strategydefs"))
+      , ColorRule(ConstructorOnly(Constructor("DefHasTType")), AttributeRef("strategydefs"))
+      , ColorDef(
+          "strategycalls"
+        , Attribute(ColorRGB("0", "64", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(ConstructorOnly(Constructor("RootApp")), AttributeRef("strategycalls"))
+      , ColorRule(ConstructorOnly(Constructor("App")), AttributeRef("strategycalls"))
+      , ColorRule(Sort("SVar"), AttributeRef("strategycalls"))
+      , ColorRule(Sort("TypedId"), AttributeRef("strategycalls"))
+      , ColorRule(Sort("QuotedBracket1"), AttributeRef("blue"))
+      , ColorRule(Sort("QuotedBracket2"), AttributeRef("blue"))
+      , ColorRule(Sort("QuotedBracket3"), AttributeRef("blue"))
+      , ColorRule(Sort("QuotedBracket4"), AttributeRef("blue"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorDef(
+          "darkred"
+        , Attribute(ColorRGB("128", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red"
+        , Attribute(ColorRGB("255", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkgreen"
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "green"
+        , Attribute(ColorRGB("0", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkblue"
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "blue"
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "cyan"
+        , Attribute(ColorRGB("0", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "magenta"
+        , Attribute(ColorRGB("255", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "yellow"
+        , Attribute(ColorRGB("255", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "white"
+        , Attribute(ColorRGB("255", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "black"
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "gray"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "grey"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "orange"
+        , Attribute(ColorRGB("255", "165", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "pink"
+        , Attribute(ColorRGB("255", "105", "180"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "brown"
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), NORMAL())
+        )
+      , ColorDef("default", Attribute(ColorDefault(), NoColor(), NORMAL()))
+      ]
+    )
+  , Colorer(
+      " "
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), Attribute(ColorDefault(), NoColor(), NORMAL()))
+      , ColorRule(
+          Token(TK_STRING())
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_NUMBER())
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer("", [])
+  , Colorer("", [])
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ColorRule(ConstructorOnly(Constructor("ModName-Plhdr")), AttributeRef("gray"))]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("ModName-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Module-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("AnnoDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ImportModName-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("AnnoDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Decl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ImportModName-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ModName-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StrategyDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Anno-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StrategyDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("MaybeEmptyId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Anno-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OldType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ModName-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Wld-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Wld-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Wld-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Int-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Real-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Kind-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Kind-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Opdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortArg-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Opdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OldArgType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RetType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("FunType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OldType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ConstType-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Kind-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Kind-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Opdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortArg-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Opdecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OldArgType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RetType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("FunType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OldType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ConstType-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotation-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedChars1-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedChars2-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedChars3-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedChars4-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dollar1-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dollar2-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dollar3-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dollar4-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedPart1-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QuotedBracket1-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedPart2-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QuotedBracket2-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedPart3-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QuotedBracket3-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StringQuotedPart4-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QuotedBracket4-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Decl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Overlay-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDef-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("StrategyDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SDefP-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Call-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("With-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Int-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Real-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Char-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SwitchCase-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Char-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Anno-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefP-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleCond-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Overlay-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Anno-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefP-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleCond-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Char-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("PreTerm-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("StrategyDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SDefP-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Call-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("With-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Int-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Real-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Char-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("String-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SwitchCase-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Anno-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefP-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RDefT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleCond-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("DynRuleScopeId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ScopeLabels-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("DynRuleDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("DynRuleId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDec-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("DynRuleScopeId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleDec-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Typedid-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleNames-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleNames-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Overlay-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Def-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SSimpleFunType-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("ConstType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dyn-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SFunType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("FunTType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SSimpleFunType-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("ConstType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Dyn-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Id-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UCID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SFunType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("FunTType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SSimpleFunType-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Proxy-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SCoercion-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Coercion-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SVar-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("StrategyDef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("MaybeEmptyId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("FunTType-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Strategy-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Language(
+      ""
+    , [SemanticObserver(Strategy("editor-analyze"), []), Context(Legacy())]
+    )
+  , References(
+      ""
+    , [ReferenceRule("_", Strategy("editor-resolve")), HoverRule("_", Strategy("editor-hover"))]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Analysis\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Show analyzed AST\""), Strategy("debug-show-analyzed"), [])
+          , Action(String("\"Show analyzed program\""), Strategy("debug-show-analyzed-concrete"), [])
+          ]
+        )
+      ]
+    )
+  ]
+)

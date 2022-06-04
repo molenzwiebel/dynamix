@@ -1,0 +1,121 @@
+% !TEX root = ../document.tex
+
+\chapter{\label{ch:tim}The Tim intermediate representation}
+
+Before we discuss the Dynamix language, we must first discuss the language that it targets. As discussed in chapter \ref{ch:design}\todo{ensure we actually do discuss this}, a suitable compilation target for a dynamic semantics \ac{DSL} must be extensible enough to allow a wide variety of operations and have enough abstraction to support "unconventional"\footnote{Here, unconventional control flow is any control flow that goes beyond conditional branching and function calls. Exceptions are therefore also considered unconventional control flow.} control flow. Such requirements can be filled by numerous target platforms in numerous different ways, so to prevent users of Dynamix from being locked into one specific target platform we instead opt to compile to an \acf{IR}. This \ac{IR} represents the result of the evaluation of a Dynamix specification on a specific input \ac{AST}, and effectively contains the exact abstract set of instructions that the input \ac{AST} will perform at runtime, as specified by the language designer in the Dynamix specification.\\
+
+The specific \ac{IR} that Dynamix compiles to is a new Spoofax meta-language called Tim\footnote{The name Tim originates from Target InterMediate language.}. Tim is a human-readable language with a relatively low level of abstraction that is designed to use \acf{CPS}. Its grammar is largely inspired by the \ac{CPS} \ac{IR} used by the Standard ML compiler and described in Andrew W. Appel's book, Compiling with Continuations \cite{Appel1992}. In the remainder of this chapter, we discuss Tim's grammar (section \ref{sec:tim_grammar}), typing rules (section \ref{sec:tim_operations}), dynamic semantics (section \ref{sec:tim_runtime}), and how it may be extended or improved upon in future work (section \ref{sec:tim_future}).
+
+\section{Design and grammar}
+\label{sec:tim_grammar}
+
+Tim as an intermediate language centers around \acf{CPS} as a way of modeling control flow. As dicussed in chapter \ref{ch:design}\todo{ensure discussed}, using a \ac{CPS}-based target language is a natural way of allowing a wide-range of control flow while at the same time being able to take advantages of well-known compilation and optimization strategies available
+
+As concluded in chapter \ref{ch:design}, a target representation that uses \acf{CPS}
+
+\newcommand{\prodname}[1]{{\scriptstyle <}\textit{#1}{\scriptstyle >}}
+
+\begin{grammar}[The grammar of the Tim intermediate representation.][][gr:tim]
+  \firstcase{\prodname{program}}{\prodname{exp}}{}\\
+
+  \firstcase{\prodname{exp}}{\prodname{identifier}\texttt{(}\prodname{values}\texttt{)}}{Function tail-call}
+  \otherform{\texttt{\#}\prodname{primitive}\texttt{(}\prodname{values}\texttt{) => }\prodname{identifier}\texttt{; }\prodname{exp}}{Primitive call}
+  \otherform{\texttt{\#}\prodname{primitive}\texttt{(}\prodname{values}\texttt{)}}{Primitive tail-call}
+  \otherform{\texttt{if \#}\prodname{primitive}\texttt{(}\prodname{values}\texttt{) then }\prodname{exp}\texttt{ else }\prodname{exp}}{Conditional primitive}
+  \otherform{\texttt{fix \{ }\prodname{funs}\texttt{ \} in }\prodname{exp}}{Function definition}
+  \otherform{\texttt{let }\prodname{bindings}\texttt{ in }\prodname{exp}}{Let definition}\\
+  
+  \firstcase{\prodname{value}}{\prodname{int literal}}{Integer literal}
+  \otherform{\prodname{string literal}}{String literal}
+  \otherform{\prodname{identifier}}{Variable reference}\\
+
+  \firstcase{\prodname{values}}{\epsilon}{}
+  \otherform{\prodname{value}}{}
+  \otherform{\prodname{value}\texttt{, }\prodname{value}}{}\\
+
+  \firstcase{\prodname{fun}}{\texttt{fun }\prodname{identifier}\texttt{(}\prodname{identifiers}\texttt{) = }\prodname{exp}}{}\\
+
+  \firstcase{\prodname{funs}}{\epsilon}{}
+  \otherform{\prodname{fun}}{}
+  \otherform{\prodname{fun}\texttt{ }\prodname{funs}}{}\\
+
+  \firstcase{\prodname{binding}}{\prodname{identifier}\texttt{ = }\prodname{value}}{}\\
+
+  \firstcase{\prodname{bindings}}{\epsilon}{}
+  \otherform{\prodname{binding}}{}
+  \otherform{\prodname{binding}\texttt{, }\prodname{bindings}}{}\\
+
+  \firstcase{\prodname{identifier}}{\texttt{[a-zA-Z\_\$] [a-zA-Z0-9\_\$-]*}}{}\\
+
+  \firstcase{\prodname{identifiers}}{\epsilon}{}
+  \otherform{\prodname{identifier}}{}
+  \otherform{\prodname{identifier}\texttt{, }\prodname{identifiers}}{}\\
+
+  \firstcase{\prodname{int literal}}{\texttt{'-'? [1-9] [0-9]*}}{}
+  \firstcase{\prodname{string literal}}{\texttt{" }\prodname{string char*}\texttt{ "}}{}
+  \firstcase{\prodname{primitive}}{\texttt{[A-Za-z0-9\_+*/-]+}}{}
+\end{grammar}
+
+\begin{figure}
+  \begin{lstlisting}
+<program> ::= <exp>
+
+<exp> ::= 'hole'
+  | <identifier> '(' <values> ')'
+  | 'fix' '{' <funs> '}' 'in' <exp>
+  | '#' <primitive> '(' <values> ')' '=>' <identifier> ';' <exp>
+  | '#' <primitive> '(' <values> ')'
+  | 'if' '#' <primitive> '(' <values> ')' 'then' <exp> 'else' <exp>
+  | 'let' <bindings> 'in' <exp>
+
+<value> ::= <int literal>
+  | <string literal>
+  | <identifier>
+
+<values> ::=
+  | <value>
+  | <value> ',' <values>
+
+<fun> ::= 'fun' <identifier> '(' <identifiers> ')' = <exp>
+
+<funs> ::=
+  | <fun>
+  | <fun> <funs>
+
+<binding> ::= <identifier> '=' <value>
+
+<bindings> ::=
+  | <binding>
+  | <binding> ',' <bindings>
+
+<identifier> ::= [$a-zA-Z_] [a-zA-Z0-9_-]*
+
+<identifiers> ::=
+  | <identifier>
+  | <identifier> ',' <identifiers>
+
+<int literal> ::= '-'? [1-9] [0-9]*
+<string literal> ::= '"' <string char*> '"'
+<primitive> ::= [A-Za-z0-9_+*/-]+
+  \end{lstlisting}
+  \caption{The full grammar of the Tim language.}
+  \label{fig:tim_grammar}
+\end{figure}
+
+\section{Typing rules and primitives}
+\label{sec:tim_operations}
+
+\section{Dynamic semantics and runtime}
+\label{sec:tim_runtime}
+
+\section{Future improvements}
+\label{sec:tim_future}
+
+\todo{future work chapter instead?}
+
+% - Tim grammar
+% - Interpreter
+% - Origins in green book
+% - Primitives
+% - Tim typing rules?
+% - Module/type system?

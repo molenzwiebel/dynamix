@@ -1,0 +1,229 @@
+% !TEX root = ../document.tex
+
+\chapter{\label{ch:design}Designing a \acs{DSL} for runtime semantics}
+\todo{better chapter title?}
+
+% The ultimate goal\todo{bleh} of this thesis is to design and implement a new \ac{DSL} that functions as a method of defining the runtime semantics of a programming language. This \ac{DSL} should be expressive enough to implement a large variety of languages, while also providing a method of turning a language specification into a program (either an interpreter or a compiler) capable of executing the language.\\
+
+In this chapter, we discuss a set of features that a \ac{DSL} for runtime semantics should conform to in order to be a minimally viable product. We also discuss what its position is compared to other parts of a language definition (e.g. the grammar and static semantics), how it may want to interact with the results of these stages, and what features would help widen the range of source languages the \ac{DSL} might be applicable for.\\
+
+Within this chapter, we use the term \textbf{source language} to refer to the language under compilation (i.e. the language for which a runtime semantics specification is written). Unless otherwise specified, the term \textbf{\ac{DSL}} refers to the \ac{DSL} for dynamic specification whose design we are considering. The term \textbf{rule} refers to the runtime semantics for a single source language construct (e.g. a single rule may define the behavior of integer multiplication). The term \textbf{specification} refers to the set of all runtime semantics \textbf{rule}s (for the source language) written in the \ac{DSL}.
+
+\section{The anatomy of a formal runtime semantics specification}
+\label{sec:design_anatomy}
+
+\begin{figure}
+  \begin{prooftree}
+    \AxiomC{$ G,E,S \vdash e_1 : str(n_1, s_1), S_1, \_ $}
+    \noLine
+    \UnaryInfC{$ G,E,S_1 \vdash e_2 : str(n_2, s_2), S_2, \_ $}
+    \noLine
+    \UnaryInfC{$ v = str(n_1 + n_2, s_1 || s_2) $}
+    \RightLabel{\;\;\;\textsc{[Str-Concat]}}
+    \UnaryInfC{$G,E,S \vdash e_1 + e_2 : v, S_2, \_ $}
+  \end{prooftree}
+  \begin{prooftree}
+    \AxiomC{$ G,E,S \vdash e_1 : int(i_1), S_1, \_ $}
+    \noLine
+    \UnaryInfC{$ G,E,S_1 \vdash e_2 : int(i_2), S_2, \_ $}
+    \noLine
+    \UnaryInfC{$ v = int(i_1 + i_2) $}
+    \RightLabel{\;\;\;\textsc{[Int-Addition]}}
+    \UnaryInfC{$G,E,S \vdash e_1 + e_2 : v, S_2, \_ $}
+  \end{prooftree}
+  \caption{Examples of the runtime semantics for string concatenation and integer addition in formal notation for the Chocopy language. Adapted from the Chocopy reference manual by Padhye et al. \cite{PadhyeSH19}.}
+  \label{fig:chocopy_semantics_example}
+\end{figure}
+
+\newcommand{\jvar}[1]{\textit{\texttt{#1}}}
+\newcommand{\jop}[1]{\texttt{#1}}
+
+\begin{figure}
+  \subsection*{EvaluateStringOrNumericBinaryExpression(\jvar{leftOperand}, +, \jvar{rightOperand})}
+  \begin{itemize}
+    \item Let \jvar{lref} be the result of evaluating \jvar{leftOperand}.
+    \item Let \jvar{lval} be ? \jop{GetValue}(\jvar{lref}).
+    \item Let \jvar{rref} be the result of evaluating \jvar{rightOperand}.
+    \item Let \jvar{rval} be ? \jop{GetValue}(\jvar{rref}).
+    \item Let \jvar{lprim} be ? \jop{ToPrimitive}(\jvar{lval}).
+    \item Let \jvar{rprim} be ? \jop{ToPrimitive}(\jvar{rval}).
+    \item If \jop{Type}(\jvar{lprim}) is String or \jop{Type}(\jvar{lprim}) is String, then
+    \begin{itemize}
+      \item Let \jvar{lstr} be ? \jop{ToString}(\jvar{lprim}).
+      \item Let \jvar{rstr} be ? \jop{ToString}(\jvar{rprim}).
+      \item Return the string-concatenation of \jvar{lstr} and \jvar{rstr}.
+    \end{itemize}
+    \item Note: at this point it must be a numeric operation.
+    \item Let \jvar{lnum} be ? \jop{ToNumeric}(\jvar{lval}).
+    \item Let \jvar{rnum} be ? \jop{ToNumeric}(\jvar{rval}).
+    \item \textit{[NaN and infinite cases omitted]}
+    \item Assert: \jvar{lnum} and \jvar{rnum} are both finite.
+    \item If \jvar{lnum} is $ - 0_{\mathbb{F}} $ and \jvar{rnum} is $ -0_{\mathbb{F}} $, return $ - 0_{\mathbb{F}} $.
+    \item Return $ \mathbb{F}(\mathbb{R}(\jvar{lnum}) + \mathbb{R}(\jvar{rnum})) $.
+  \end{itemize}
+  \caption{Examples of the runtime semantics for string concatenation and number addition in the JavaScript programming language. Certain steps are omitted for the sake of brevity. Adapted from the ECMAScript 2023 language specification \cite{ecma1999262}.}
+  \label{fig:javascript_semantics_example}
+\end{figure}
+
+We will start our design process by taking a look at existing formal specifications of several programming languages. Doing so allows us to derive a minimal set of features needed needed to replicate these specifications in our new \ac{DSL}, while at the same time giving us a general idea of what the syntax of the \ac{DSL} may look like. In particular, we will consider the formal specifications of the plus (\texttt{+}) operator, responsible for both numerical addition and string concatenation. This operation was chosen for several reasons: it is a common and well-understood operation, it involves different behavior based on the types of its sub-expressions, and one has to consider the underlying data storage (such as the bit-width of the numeric types and the wrapping behavior when addition may overflow) when defining the operation. \Cref{fig:chocopy_semantics_example,fig:javascript_semantics_example} show formal specifications of the plus operator for Chocopy \cite{PhadyeSH19-SPLASHE} and JavaScript, respectively.\\
+
+The Chocopy specification of the plus operator (\cref{fig:chocopy_semantics_example}) is described using formal notation. The \textit{store} parameter $S$, which represents the values of all locations currently in use by the program, is explicitly specified as an input and output parameter to each language. Since the evaluation of $e_2$ uses store $S_1$, it must logically be evaluated after $e_1$. As a result, if evaluating $e_1$ had side-effects, those effects must be visible when $e_2$ is evaluated. The specification also considers the underlying data representation of the values. String values (\texttt{str}) are defined to carry both the length and the contents of the string as separate fields, and the concatenation explicitly notes that the resulting string length is the sum of the individual lengths. How exactly integers are stored, and how overflow should be handled, is mentioned elsewhere in the Chocopy manual \cite{PadhyeSH19}: integers are signed 32-bit values, and the behavior when this addition overflows is undefined\footnote{"Undefined behavior" is a common term in formal language specifications and indicates a complete lack of obligations on a particular implementation of the language when such behavior occurs. Returning an arbitrary value, crashing the program, or even shutting down the computer would all be behaviors consistent with the specification.}.\\
+
+The ECMAScript specification of the plus operator (\cref{fig:javascript_semantics_example}) uses natural language instead of formal notation to describe the operation. Here, unlike the Chocopy specification, there is no explicit "state-threading". Instead, it is implicitly assumed that operations are performed in the order in which they are listed, and that any underlying changes to the program environment as a result of these operations are reflected in the next step. Indeed, the current environment in which the expressions are evaluated ($ G, E, S $ in the Chocopy specification) is implicitly inherited from the environment that contained the addition expression. The specific data representations of both numbers and strings, as well as the exact behavior of string-concatenation and the $\mathbb{F}$ and $\mathbb{R}$ operators, are defined elsewhere in the specification.\\
+
+Both specifications perform \textit{conditional} behavior to determine whether to apply numeric or string addition. For the ECMAScript specification, this branching is explicitly done at runtime: the type of the operands is derived only after they are both evaluated. This is a natural choice for JavaScript: it is impossible to always statically predict the runtime types of expressions due to its dynamically-typed nature\footnote{It should be noted that even through JavaScript is dynamically-typed, advanced JavaScript engines are able elide the vast majority of type checks through a combination of static and runtime analysis. This elision does not conflict with the specification, since it is only performed in situations where the engine is able to prove that it is safe to do so.}. The Chocopy specification is more ambiguous in how a specific rule is selected. It is clear that the premises of the \textsc{[Str-Concat]} and \textsc{[Int-Addition]} rules are disjoint (after all, a value cannot be both an integer and a string at the same time), but there is no explicit process described for exactly \textit{when} to select a rule. Since Chocopy is statically typed, a compiler that unconditionally emits either string concatenation or integer addition code based on the types involved would adhere to the specification. However, an implementation that performed this check at runtime would be equally valid (since the Chocopy specification imposes no specific restrictions on both the data representation of values and the time complexity of the addition operation). This shows an interesting aspect of formal specifications for programming languages: their primary aim is to describe \textit{how} programs are executed, but this description does not necessarily translate to the most optimal\footnote{Generally, a language implementation is considered more optimal if it runs faster. However, different requirements may call for a different definition of optimal (e.g. consider a lightweight implementation meant for low-power electronics, which may favor simplicity over performance).} implementation.\\
+
+Based on the two discussed specification examples, we can derive the following categories of features that our \ac{DSL} should support. These give a baseline set of requirements that the designed \ac{DSL} should conform to, in order to replicate the ChocoPy and ECMAScript specifications. We justify these requirements by higlighting the appropriate sections in the discussed examples.\todo{interesting enough? reword paragraph?}
+
+\begin{itemize}
+  \item \textbf{Static rule selection}. The \ac{DSL} should be able to offer some deterministic method for selecting which rule(s) are applicable for any specific language construct. It should be possible to indicate that one rule applies to the multiplication operator, whereas another applies to the subtraction operator.
+  \begin{itemize}
+    \item In the formal notation used by the Chocopy specification, the applicable rules for some expression $ e $ are the ones for which $ G, E, S \vdash e : v, S', \_ $ appears in the conclusion. The ECMAScript specification uses natural language to indicate that a binary expression should defer to the appropriate \texttt{Evaluate\hspace{0pt}String\hspace{0pt}Or\hspace{0pt}Numeric\hspace{0pt}Binary\hspace{0pt}Expression} implementation.
+  \end{itemize}
+  \item \textbf{Runtime conditional behavior}. A rule in the \ac{DSL} should be able to perform conditional behavior based on values derived at runtime, for situations where an applicable rule cannot be selected statically. It should be possible to only conditionally evaluate (sub-)expressions.
+  \begin{itemize}
+    \item The ECMAScript specification performs conditional behavior at runtime to differentiate between numerical addition and string concatenation. The discussed Chocopy examples do not perform any conditional behavior. Conditional evaluation is essential to in order to be able to specify branching behavior (e.g. if-then-else statements, loops).
+  \end{itemize}
+  \item \textbf{Clear ordering of operations}. It should be unambigious in what order operations are evaluated in a \ac{DSL} rule, and how these operations affect the surrounding state of the program.
+  \begin{itemize}
+    \item The Chocopy example explicitly threads stores by using $ S_n $. The ECMAScript specification implicitly specifies that operations are executed in exactly the listed order. Both specifications explicitly require the left-hand side of the addition operator to be evaluated before the right-hand side.
+  \end{itemize}
+  \item \textbf{Access to primitive operations}. It should be possible to express "primitive" operations in the \ac{DSL}, such as arithmetic operations, I/O operations, and interacting with the operating system.
+  \begin{itemize}
+    \item Both the ChocoPy and ECMAScript specification use the addition operator in its mathematical sense. This is a primitive operation, as it cannot be expressed using other operations within the language. Such operations must therefore be provided by the runtime platform (e.g. ChocoPy addition might be performed using the \texttt{add} RISC-V instruction), and exposed by the \ac{DSL}.
+  \end{itemize}
+  \item \textbf{Appropriate control over data representation}. A rule in the \ac{DSL} should be able to control the runtime data representation of values within the language, to a certain degree. A user should be able to specify representation-dependent options, such as the bit-width of integer values and their wrapping behavior. A user should be able to form composite values, such as tuples, records, or structs.
+  \begin{itemize}
+    \item Both the ChocoPy and ECMAScript specification do not fully specify the runtime data representation of their values, opting to allow the implementation to choose an appropriate representation. However, both specifications put requirements on the data representation of certain values: integers in ChocoPy \textbf{must} be 32-bit signed, and numbers in ECMAScript must be 64-bit IEEE 754-2019 \cite{8766229} double-precision floating point numbers.
+  \end{itemize}
+\end{itemize}
+
+%   - Compilation process should involve "compilation"/translation of the source program based on the rules.
+%     - Effectively meta-interpreting the source language (all possible paths).
+%     - Meta-interpreting requires some output language/data format.
+
+\input{sections/310-design-to-evaluation-b.tex}
+
+\section{Considering control flow}
+\label{sec:design_control_flow}
+One aspect of a language specification we have so far largely glossed over is that of control flow. While \cref{sec:design_anatomy} considers control flow from the aspect of evaluation order, we have yet to discuss constructs like conditionals, loops, and exceptions. With our intent to provide a \ac{DSL} capable of describing a large amount of source languages, we must make an effort to support most, if not all, of these constructs in an easy manner.
+
+\subsection{Control flow in existing specifications}
+The natural approach to implementing control flow in a dynamic specification is by simply abstracting it through conditional rule selection. Consider the example in \cref{fig:chocopy_conditional_example}. The method for selecting the appropriate rule that applies to the while statement is used as a method to perform control-flow: the conditional check implicitly introduced by the rule selection is used to perform the conditional behavior that a while loop must perform at the start of each iteration. A similar definition can be used to conditionally evaluate statements, such as an if-then-else expression.\\
+
+\begin{figure}
+  \begin{prooftree}
+    \AxiomC{$ G,E,S \vdash e_1 : bool(true), S_1, \_ $}
+    \RightLabel{\;\;\;\textsc{[While-False]}}
+    \UnaryInfC{$G,E,S \vdash \texttt{while }  e_1 : b_1 : \_, S_1, \_ $}
+  \end{prooftree}
+  \begin{prooftree}
+    \AxiomC{$ G,E,S \vdash e_1 : bool(false), S_1, \_ $}
+    \noLine
+    \UnaryInfC{$ G,E,S_1 \vdash b_1 : \_, S_2, \_ $}
+    \noLine
+    \UnaryInfC{$ G,E,S_2 \vdash \texttt{while } e_1 : b_1 : \_, S_3, \_ $}
+    \RightLabel{\;\;\;\textsc{[While-True]}}
+    \UnaryInfC{$G,E,S \vdash \texttt{while }  e_1 : b_1 : \_, S_3, \_ $}
+  \end{prooftree}
+  \caption{Control flow as seen in the ChocoPy reference manual \cite{PadhyeSH19}. The appropriate rule is chosen based on the evaluation of the condition expression $e_1$. The \textsc{[While-True]} case recurses as a means of performing multiple iterations.}
+  \label{fig:chocopy_conditional_example}
+\end{figure}
+
+This abstraction becomes much less simple in the presence of statements that can abruptly jump to a different part of the program, such as the \texttt{return} statement. In fact, the ChocoPy reference manual defines another case as part of the while loop semantics, specifically for handling early returns. This case can be seen in \cref{fig:chocopy_conditional_early_return}. The last value in the output triplet, $ R $, indicates the value returned from the function. Every other rule that affects control flow must consider this value, and possibly immediately return it without evaluating the rest of the construct (e.g. a function body must not execute the remaining instructions if an early return is encountered).\\
+
+This approach is managable if one only needs to support early returns, but it doesn't scale very well\footnote{Perhaps this is the reason why ChocoPy does not support the \texttt{continue} and \texttt{break} constructs.}. The ECMAScript specification \cite{ecma1999262} handles this by wrapping the result of an evaluation inside a \textit{continuation}. This continuation indicates whether execution should continue normally, or whether it should move elsewhere (e.g. because an exception was thrown). The \texttt{?} character prefixed to certain operations in the ECMAScript example discussed earlier (\cref{fig:javascript_semantics_example}) is part of this abstraction: it indicates that if the result of the following function call was an \textit{abrupt completion} (i.e. an exception was thrown), that this result should immediately be propagated upwards without continuing the remainder of the rule.\\
+
+\begin{figure}
+  \begin{prooftree}
+    \AxiomC{$ G,E,S \vdash e_1 : bool(true), S_1, \_ $}
+    \noLine
+    \UnaryInfC{$ G,E,S_1 \vdash b_1 : \_, S_2, R $}
+    \noLine
+    \UnaryInfC{$ R \texttt{ is not } \_ $}
+    \RightLabel{\;\;\;\textsc{[While-True-Return]}}
+    \UnaryInfC{$G,E,S \vdash \texttt{while }  e_1 : b_1 : \_, S_2, R $}
+  \end{prooftree}
+  \caption{A specialized case of the while construct as seen in the ChocoPy reference manual \cite{PadhyeSH19}. This case aborts control flow if some statement in the body of the loop performed an early return.}
+  \label{fig:chocopy_conditional_early_return}
+\end{figure}
+
+This approach is powerful enough to handle a wide range of control flow features, including early returns, loop breaking, generators, asynchronous functions and exceptions. However, it comes at the cost of additional complexity in the specification (e.g. the possibility of an exception must be handled in every rule that can indirectly cause one) and has substantial overhead if a language implementation directly implements control flow in this manner. Clearly, both the usability and performance of our \ac{DSL} would benefit from an alternative implementation for control flow that does not suffer from these issues.
+
+\subsection{Control flow through continuations}
+An alternative approach to control flow within a dynamic specification borrows from a technique first described by Strachey and Wadsworth \cite{continuations_mathematical_semantics}. They propose the use of \textit{continuations}\footnote{Continuations were independently conceived by several different computer scientists, but the version used by Strachey et al. originates from the work by Mazurkiewicz \cite{Mazurkiewicz71}. Reynolds's "The Discoveries of Continuations" \cite{Reynolds93} discusses the full origins of the continuation concept.}, an abstract term representing "the meaning of the rest of the program" (Reynolds,  \cite{Reynolds93}), as a method of modeling the mathematical semantics of a programming language with jumps. The core insight is to no longer consider the semantics of each language construct in isolation. As Strachey and Wadsworth put it:
+
+\begin{quote}
+The solution to this problem is to abandon the idea of giving the state transformation for each command in isolation. We must define, instead, a semantic function which yields, for every command $\gamma$, in a program, the state transformation which would be produced from there to the end of the program.
+\end{quote}
+
+Particularly, we will add an additional parameter to our evaluation relation, indicating the continuation of the expression. This continuation is some abstract representation of a point in the program (e.g. a label or a function) where evaluation should continue after the evaluation relation has completed.\\
+
+Consider the example in \cref{fig:continuation_introduction}. We introduce a new \texttt{continuation} parameter, representing a \textit{label} to which execution\footnote{We use the term evaluation here, but it is important to consider that this usage of continuations is \textit{only within the dynamic specification}. A specific implementation of the language is not required to use the specific continuation implementation, or even use continuations at all. We use the term evaluation only because it is convenient to view a dynamic specification as a set of instructions to be followed at runtime.} should jump after the completion of the computation described in the body of the function. For the evaluation of the subexpressions \texttt{leftOperand} and \texttt{rightOperand}, we simply indicate that they should continue directly on the next line at the \textsc{AfterLeft} and \textsc{AfterRight} labels. Conceptually, this transformation just makes the implicit returning behavior of functions (i.e. that they jump back to the callee directly after the call expression) explicit.\\
+
+\begin{figure}
+  \subsection*{EvaluateStringOrNumericBinaryExpression(\jvar{leftOperand}, +, \jvar{rightOperand}\hl{, }\jvar{\hl{continuation}})}
+  \begin{itemize}
+    \item Evaluate \jvar{leftOperand}\hl{ with continuation label \textsc{AfterLeft}.}
+  \end{itemize}
+\hl{\textsc{\small AfterLeft(\textit{\texttt{lref}})}:}
+  \begin{itemize}
+    \item Let \jvar{lval} be ? \jop{GetValue}(\jvar{lref}).
+    \item Evaluate \jvar{rightOperand}\hl{ with continuation label \textsc{AfterRight}.}
+  \end{itemize}
+\hl{\textsc{\small AfterRight(\textit{\texttt{rref}})}:}
+  \begin{itemize}
+    \item Let \jvar{rval} be ? \jop{GetValue}(\jvar{rref}).
+    \item \textit{[several steps omitted]}
+    \item Let \jvar{result} be $ \mathbb{F}(\mathbb{R}(\jvar{lnum}) + \mathbb{R}(\jvar{rnum})) $.
+    \item \hl{Jump to \textit{\texttt{continuation}} with value \textit{\texttt{result}}.}
+  \end{itemize}
+  \caption{A rewritten version of the ECMAScript addition example from \cref{fig:javascript_semantics_example} that uses continuation labels for control flow. The highlighted sections indicate changes needed to support continuations. Text in \textsc{Small Caps} indicates a definition or reference to a continuation label.}
+  \label{fig:continuation_introduction}
+\end{figure}
+
+The real benefit of a continuation-based approach becomes clear when we perform control flow. \Cref{fig:continuation_early_return} contains a fictional implementation of the evaluation of statements in ECMAScript. In the case that the statement is a sole expression, it is directly evaluated, with execution continuing at \textsc{AfterExpressionStatement}. This simply discards the result of the expression, then jumps to \jvar{continuation} (which presumably represents the next statement). However, if the statement represents an early return, we instead execute the expression with the continuation label \textsc{\$ReturnFromFunction} (assumed to have been defined when we entered the current function). This simple change has big consequences: because we never jump to \jvar{continuation}, control flow never continues "past" the return statement. The callee never has to consider an early return, as it won't even continue execution in the case where such an early return has occurred.\\
+
+\begin{figure}
+  \subsection*{EvaluateStatement(\jvar{statementType}, \jvar{subExpression}, \jvar{continuation})}
+  \begin{itemize}
+    \item If \jvar{statementType} is \texttt{ExpressionStatement}:
+    \begin{itemize}
+      \item Evaluate \jvar{subExpression} with continuation label \textsc{AfterExpressionStatement}.
+    \end{itemize}
+    \item If \jvar{statementType} is \texttt{ReturnStatement}:
+    \begin{itemize}
+      \item Evaluate \jvar{subExpression} with continuation label \textsc{\$ReturnFromFunction}.
+    \end{itemize}
+    \item \textit{[other cases omitted]}
+  \end{itemize}
+\textsc{AfterExpressionStatement(\textit{\texttt{discarded}}):}
+  \begin{itemize}
+    \item Jump to \jvar{continuation}.
+  \end{itemize}
+  \caption{Using continuations to implement the \texttt{return} statement. We assume \textsc{\$ReturnFromFunction} to be a global property to a continuation label implementing the process of returning a value from a function.}
+  \label{fig:continuation_early_return}
+\end{figure}
+
+Other control flow can be implemented in a similar way. For example, exceptions can be handled by designating a \textsc{\$HandleException} continuation. Throwing an exception can then be implemented by virtue of simply continuing execution at this label, instead of the supplied continuation. Analogously, the \texttt{break} statement might be implemented by defining a continuation label positioned after the body of the loop.\\
+
+As far as the authors are aware, no current language specification makes use of continuations as an abstraction over control flow, despite their promising abilities. Perhaps the notational overhead of continuations, or an increase in cognitive complexity when reading the specification, makes them an unattractive abstraction. This is not too surprising, given that the main benefit of modeling control flow through continuations is that it allows for more efficient execution (if one were to directly convert a specification to a language implementation), and that it allows for better defined mathematical semantics, neither of which are usually priorities for a formal language specification. \\
+
+However, a continuation based approach to control flow lends itself excellently to our \ac{DSL}. Efficient compilation of programs that use continuations is a well-understood problem\footnote{One such example is the excellent book "Compiling with Continuations" by Andrew W. Appel \cite{Appel1992}.}, and a structural approach to continuations aided by effective static analysis will relieve some of the cognitive complexity of working with continuations.
+
+%   - How does one allow complex non-linear control flow?
+%     - Abstract over control-flow itself!
+%     - Natural result: CPS
+%   - TODO: Discuss holy terms here? Should prob wait until Tim is introduced?
+
+\section{A minimum-viable feature set}
+\label{sec:design_features}
+
+\todo{See content}
+%   - What kind of capabilities should a dynamic specification language support?
+%     - Support for "native" operations implemented on a lower level than target language itself (primitives!)
+%     - Support for being able to interface with the constraint analyzer/static analysis
+%     - Support for complex non-linear control flow
+%     - Nice to have:
+%       - Type system/verification of operations where possible
+%       - Multi-file setup

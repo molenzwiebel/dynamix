@@ -1,0 +1,224 @@
+Module(
+  "editor"
+, Imports(
+    [Import("Menus"), Import("Views"), Import("Colorer"), Import("Syntax")]
+  )
+, [ Language(
+      ""
+    , [ Extensions(Values(["tmpl", "sdf3"]))
+      , Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("Module")])
+      , SemanticProvider("target/metaborg/stratego.ctree")
+      , SemanticProvider("target/metaborg/stratego.jar")
+      , SemanticObserver(Strategy("editor-analyze"), [MultiFile()])
+      , OnSave(Strategy("editor-save"), None())
+      ]
+    )
+  , References("", [ReferenceRule("_", Strategy("editor-resolve"))])
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Syntax\""))
+        , [OpenEditor(), Meta()]
+        , [ Action(String("\"Show abstract syntax\""), Strategy("debug-show-aterm"), [RealTime(), Source()])
+          , Action(String("\"Show desugared syntax\""), Strategy("debug-show-desugared"), [RealTime(), Source()])
+          , Action(String("\"Show pre-analyzed syntax\""), Strategy("debug-show-pre-analyzed"), [RealTime(), Source()])
+          , Action(String("\"Show analyzed syntax\""), Strategy("debug-show-analyzed"), [])
+          ]
+        )
+      , ToolbarMenu(
+          Label(String("\"Analysis\""))
+        , [Meta()]
+        , [ Submenu(
+              String("\"Show analysis\"")
+            , [OpenEditor()]
+            , [ Action(String("\"Project\""), Strategy("debug-project"), [])
+              , Action(String("\"Partition\""), Strategy("debug-partition"), [])
+              ]
+            )
+          , Submenu(
+              String("\"Show index\"")
+            , [OpenEditor()]
+            , [ Action(String("\"Project\""), Strategy("debug-index-project"), [])
+              , Action(String("\"Partition\""), Strategy("debug-index-partition"), [])
+              ]
+            )
+          , Submenu(
+              String("\"Show tasks\"")
+            , [OpenEditor()]
+            , [ Action(String("\"Project\""), Strategy("debug-task-project"), [])
+              , Action(String("\"Partition\""), Strategy("debug-task-partition"), [])
+              , Action(String("\"Selection\""), Strategy("debug-task-selection"), [])
+              ]
+            )
+          , Submenu(
+              String("\"Statix\"")
+            , [OpenEditor()]
+            , [ Action(String("\"Show pre-transformed\""), Strategy("statix-debug-show-pre-transformed"), [Source()])
+              , Action(String("\"Show pre+post-transformed\""), Strategy("statix-debug-show-pre-post-transformed"), [Source()])
+              , Action(String("\"Show analyzed\""), Strategy("statix-debug-show-analyzed"), [])
+              , Action(String("\"Show scope graph\""), Strategy("stx--show-scopegraph"), [])
+              ]
+            )
+          ]
+        )
+      , ToolbarMenu(
+          Label(String("\"Generate\""))
+        , [OpenEditor(), RealTime()]
+        , [ Action(String("\"Generate all files\""), Strategy("generate-all"), [])
+          , Submenu(
+              String("\"SDF\"")
+            , []
+            , [ Action(String("\"Generate SDF (abstract)\""), Strategy("generate-sdf-abstract"), [Meta()])
+              , Action(String("\"Generate SDF (concrete)\""), Strategy("generate-sdf-concrete"), [])
+              , Action(String("\"Generate Namespaced Syntax\""), Strategy("sdf3-to-namespaced"), [])
+              , Action(String("\"Generate Expression Grammars\""), Strategy("sdf3-to-exp-grammars"), [])
+              , Action(String("\"to Normal Form\""), Strategy("sdf3-to-normal-form"), [])
+              , Action(String("\"to Normal Form (abstract)\""), Strategy("sdf3-to-normal-form-abstract"), [Meta()])
+              , Action(String("\"Contextual Grammar (abstract)\""), Strategy("read-contextual-grammar-abstract"), [Meta()])
+              , Action(String("\"Generate Permissive Grammar (abstract)\""), Strategy("generate-permissive-abstract"), [Meta()])
+              , Action(String("\"Generate Permissive Grammar\""), Strategy("generate-permissive-concrete"), [])
+              ]
+            )
+          , Submenu(
+              String("\"Signature\"")
+            , []
+            , [ Action(String("\"Generate Signature (abstract)\""), Strategy("generate-sig-abstract"), [Meta()])
+              , Action(String("\"Generate Signature (concrete)\""), Strategy("generate-sig-concrete"), [])
+              , Action(String("\"Generate DynSem Signatures (abstract)\""), Strategy("generate-dynsem-abstract"), [Meta()])
+              , Action(String("\"Generate DynSem Signatures\""), Strategy("generate-dynsem"), [])
+              ]
+            )
+          , Submenu(
+              String("\"Completion\"")
+            , []
+            , [ Action(String("\"Generate Stratego expansions\""), Strategy("generate-new-completions-stratego"), [])
+              , Action(String("\"Generate SDF3 insertions\""), Strategy("generate-sdf-completions-concrete"), [])
+              , Action(String("\"Generate ESV colorer\""), Strategy("generate-new-completions-colorer"), [])
+              ]
+            )
+          , Action(String("\"Generate PP (abstract)\""), Strategy("generate-pp-abstract"), [Meta()])
+          , Action(String("\"Generate PP\""), Strategy("generate-pp-concrete"), [])
+          , Submenu(
+              String("\"Misc\"")
+            , []
+            , [Action(String("\"Generate TextMate grammar\""), Strategy("generate-textmate-grammar"), [])]
+            )
+          ]
+        )
+      , ToolbarMenu(
+          Label(String("\"Format\""))
+        , [OpenEditor(), RealTime()]
+        , [ Action(String("\"Format\""), Strategy("pp-sdf3"), [Source()])
+          , Action(String("\"Lift (abstract)\""), Strategy("lift-sdf3-abstract"), [Meta()])
+          , Action(String("\"Lift\""), Strategy("lift-sdf3"), [])
+          , Action(String("\"Lift (templates, abstract)\""), Strategy("lift-sdf3-template-abstract"), [Meta()])
+          , Action(String("\"Lift (templates)\""), Strategy("lift-sdf3-template"), [])
+          , Action(String("\"Extract productions (abstract)\""), Strategy("extract-regular-productions-abstract"), [Meta()])
+          , Action(String("\"Extract productions\""), Strategy("extract-regular-productions"), [])
+          ]
+        )
+      ]
+    )
+  , Views(
+      [OutlineView(Strategy("editor-outline"), [Source()], Some(ExpandToLevel("3")))]
+    )
+  , Colorer(
+      " "
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), Attribute(ColorDefault(), NoColor(), NORMAL()))
+      , ColorRule(
+          Token(TK_STRING())
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_NUMBER())
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(
+          ConstructorOnly(Constructor("String"))
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("Constructor"))
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("Lit"))
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("CiLit"))
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("Label")
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("PosRef"))
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("LabelRef"))
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          ConstructorOnly(Constructor("LiteralRef"))
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("Character")
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          SortAndConstructor(Sort("Character"), Constructor("Regular"))
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          SortAndConstructor(Sort("Character"), Constructor("Binary"))
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          SortAndConstructor(Sort("Character"), Constructor("Octal"))
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          SortAndConstructor(Sort("Character"), Constructor("Decimal"))
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          SortAndConstructor(Sort("Character"), Constructor("Hexadecimal"))
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), NORMAL())
+        )
+      ]
+    )
+  , Language(
+      ""
+    , [ LineCommentPrefix(String("\"//\""))
+      , BlockCommentDefs(BlockCommentDef(String("\"/*\""), "*", String("\"*/\"")))
+      , FenceDefs(
+          [FenceDef("[", "]"), FenceDef("(", ")"), FenceDef("{", "}")]
+        )
+      ]
+    )
+  ]
+)

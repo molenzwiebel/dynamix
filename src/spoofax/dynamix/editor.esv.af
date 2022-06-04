@@ -1,0 +1,345 @@
+Module(
+  "editor"
+, Imports(
+    [Import("Syntax"), Import("Analysis"), Import("Refactoring"), Import("dynamix/colors")]
+  )
+, [ Language(
+      ""
+    , [Extensions(Values(["dx"])), SemanticProvider("target/metaborg/stratego.ctree")]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Debug\""))
+        , [OpenEditor()]
+        , [Action(String("\"Compile to qualified module\""), Strategy("debug-compile-spec"), [])]
+        )
+      ]
+    )
+  , Language(
+      ""
+    , [ Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("DynamixProgram")])
+      , LineCommentPrefix(String("\"//\""))
+      , BlockCommentDefs(BlockCommentDef(String("\"/*\""), "*", String("\"*/\"")))
+      , FenceDefs(
+          [FenceDef("[", "]"), FenceDef("(", ")"), FenceDef("{", "}")]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Syntax\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Format\""), Strategy("editor-format"), [Source()])
+          , Action(String("\"Show parsed AST\""), Strategy("debug-show-aterm"), [Source()])
+          ]
+        )
+      ]
+    )
+  , Views(
+      [OutlineView(Strategy("editor-outline"), [Source()], Some(ExpandToLevel("3")))]
+    )
+  , Colorer(
+      " "
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), Attribute(ColorDefault(), NoColor(), NORMAL()))
+      , ColorRule(
+          Token(TK_STRING())
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_NUMBER())
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorDef(
+          "darkred"
+        , Attribute(ColorRGB("128", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red"
+        , Attribute(ColorRGB("255", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkgreen"
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "green"
+        , Attribute(ColorRGB("0", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkblue"
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "blue"
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "cyan"
+        , Attribute(ColorRGB("0", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "magenta"
+        , Attribute(ColorRGB("255", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "yellow"
+        , Attribute(ColorRGB("255", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "white"
+        , Attribute(ColorRGB("255", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "black"
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "gray"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "grey"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "orange"
+        , Attribute(ColorRGB("255", "165", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "pink"
+        , Attribute(ColorRGB("255", "105", "180"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "brown"
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), NORMAL())
+        )
+      , ColorDef("default", Attribute(ColorDefault(), NoColor(), NORMAL()))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("MID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("MSection-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("DynamixProgram-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Language(
+      ""
+    , [SemanticObserver(Strategy("editor-analyze"), [Constraint(), MultiFile()])]
+    )
+  , References(
+      ""
+    , [ReferenceRule("_", Strategy("editor-resolve")), HoverRule("_", Strategy("editor-hover"))]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Analysis\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Show pre-analyzed AST\""), Strategy("debug-show-pre-analyzed"), [Source()])
+          , Action(String("\"Show analyzed AST\""), Strategy("debug-show-analyzed"), [])
+          ]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Statix\""))
+        , [Meta()]
+        , [ Action(String("\"Show scope graph\""), Strategy("stx--show-scopegraph"), [OpenEditor()])
+          , Action(String("\"Make project library\""), Strategy("stx--make-project-library"), [])
+          ]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Refactoring\""))
+        , []
+        , [Action(String("\"Rename\""), Strategy("rename-menu-action"), [])]
+        )
+      ]
+    )
+  , Colorer(
+      " Default, token-based highlighting"
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), AttributeRef("default"))
+      , ColorRule(Token(TK_STRING()), AttributeRef("blue"))
+      , ColorRule(Token(TK_NUMBER()), AttributeRef("darkgreen"))
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "230"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer(
+      " Constants"
+    , [ ColorRule(Sort("INT"), AttributeRef("blue"))
+      , ColorRule(Sort("STRING"), AttributeRef("blue"))
+      ]
+    )
+  , Colorer(
+      " Identifiers"
+    , [ ColorRule(
+          Sort("LID")
+        , Attribute(ColorRGB("30", "30", "30"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Sort("UID")
+        , Attribute(ColorRGB("50", "50", "50"), NoColor(), BOLD())
+        )
+      , ColorRule(
+          Sort("RID")
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      ]
+    )
+  , Colorer(
+      " Identifiers"
+    , [ ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprSourceIntToTargetInt")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprSourceStrToTargetStr")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprSourceVarToTargetVar")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprContinueAt")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprCallPrimitive")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprConditionalPrimitive")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprTLet")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MTFun"), Constructor("MTFun")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprTFix")), AttributeRef("darkorange"))
+      , ColorRule(SortAndConstructor(Sort("MExpr"), Constructor("MExprQuoteTarget")), AttributeRef("darkorange"))
+      ]
+    )
+  , Colorer(
+      " System colors"
+    , [ ColorDef(
+          "darkblue"
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), ITALIC())
+        )
+      , ColorDef(
+          "blue"
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "mediumblue"
+        , Attribute(ColorRGB("0", "0", "200"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkred"
+        , Attribute(ColorRGB("128", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red"
+        , Attribute(ColorRGB("255", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red2"
+        , Attribute(ColorRGB("240", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red3"
+        , Attribute(ColorRGB("225", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red4"
+        , Attribute(ColorRGB("210", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred"
+        , Attribute(ColorRGB("255", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred2"
+        , Attribute(ColorRGB("240", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred3"
+        , Attribute(ColorRGB("225", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred4"
+        , Attribute(ColorRGB("210", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkgreen"
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "green"
+        , Attribute(ColorRGB("0", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "cyan"
+        , Attribute(ColorRGB("0", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "magenta"
+        , Attribute(ColorRGB("255", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "yellow"
+        , Attribute(ColorRGB("255", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "white"
+        , Attribute(ColorRGB("255", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "black"
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "gray"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef("grey", AttributeRef("gray"))
+      , ColorDef(
+          "orange"
+        , Attribute(ColorRGB("255", "165", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkorange"
+        , Attribute(ColorRGB("255", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "pink"
+        , Attribute(ColorRGB("255", "105", "180"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "brown"
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), NORMAL())
+        )
+      , ColorDef("default", Attribute(ColorDefault(), NoColor(), NORMAL()))
+      ]
+    )
+  ]
+)

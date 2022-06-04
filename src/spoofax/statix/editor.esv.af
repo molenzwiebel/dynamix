@@ -1,0 +1,286 @@
+Module(
+  "editor"
+, Imports(
+    [ Import("Syntax")
+    , Import("Analysis")
+    , Import("Generate")
+    , Import("Evaluate")
+    , Import("Colorer")
+    , Import("Refactoring")
+    ]
+  )
+, [ Language(
+      ""
+    , [Extensions(Values(["stx", "stxtest"])), SemanticProvider("target/metaborg/stratego.jar")]
+    )
+  , Language(
+      ""
+    , [ Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("Start")])
+      , LineCommentPrefix(String("\"//\""))
+      , BlockCommentDefs(BlockCommentDef(String("\"/*\""), "*", String("\"*/\"")))
+      , FenceDefs(
+          [FenceDef("[", "]"), FenceDef("(", ")"), FenceDef("{", "}")]
+        )
+      ]
+    )
+  , Views(
+      [OutlineView(Strategy("editor-outline"), [], Some(ExpandToLevel("1")))]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Syntax\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Show parsed AST\""), Strategy("show-parsed-aterm"), [Source()])
+          , Action(String("\"Format parsed AST\""), Strategy("format-parsed"), [Source()])
+          , Separator()
+          , Action(String("\"Show desugared AST\""), Strategy("show-desugared-aterm"), [Source()])
+          , Action(String("\"Format desugared AST\""), Strategy("format-desugared"), [Source()])
+          , Separator()
+          , Action(String("\"Show analyzed AST\""), Strategy("show-analyzed-aterm"), [])
+          , Action(String("\"Format analyzed AST\""), Strategy("format-analyzed"), [])
+          , Separator()
+          , Action(String("\"Show normalized AST\""), Strategy("show-normalized-aterm"), [])
+          , Action(String("\"Format normalized AST\""), Strategy("format-normalized"), [])
+          , Separator()
+          , Action(String("\"Show signature-rule AST\""), Strategy("show-signature-rules-aterm"), [])
+          , Action(String("\"Format signature-rule AST\""), Strategy("format-signature-rules"), [])
+          ]
+        )
+      ]
+    )
+  , Language(
+      ""
+    , [SemanticObserver(Strategy("editor-analyze"), [Constraint(), MultiFile()])]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"NaBL2 Analysis\""))
+        , [Meta(), OpenEditor()]
+        , [ Action(String("\"Debug file constraints\""), Strategy("nabl2--debug-file-constraints"), [RealTime()])
+          , Action(String("\"Debug file scope graph\""), Strategy("nabl2--debug-file-scope-graph"), [RealTime()])
+          , Action(String("\"Debug file scope graph (DOT)\""), Strategy("nabl2--debug-file-scope-graph-dot"), [RealTime()])
+          , Action(String("\"Debug file name resolution\""), Strategy("nabl2--debug-file-name-resolution"), [RealTime()])
+          , Action(String("\"Debug file unifier\""), Strategy("nabl2--debug-file-unifier"), [RealTime()])
+          , Action(String("\"Debug file symbolic constraints\""), Strategy("nabl2--debug-file-symbolic-constraints"), [])
+          , Action(String("\"Debug file ast properties\""), Strategy("nabl2--debug-file-ast-properties"), [])
+          , Separator()
+          , Action(String("\"Debug project constraints\""), Strategy("nabl2--debug-project-constraints"), [RealTime()])
+          , Action(String("\"Debug project scope graph\""), Strategy("nabl2--debug-project-scope-graph"), [RealTime()])
+          , Action(String("\"Debug project scope graph (DOT)\""), Strategy("nabl2--debug-project-scope-graph-dot"), [RealTime()])
+          , Action(String("\"Debug project name resolution\""), Strategy("nabl2--debug-project-name-resolution"), [RealTime()])
+          , Action(String("\"Debug project unifier\""), Strategy("nabl2--debug-project-unifier"), [RealTime()])
+          , Action(String("\"Debug project ast properties\""), Strategy("nabl2--debug-project-ast-properties"), [])
+          ]
+        )
+      ]
+    )
+  , References(
+      ""
+    , [ReferenceRule("_", Strategy("nabl2--editor-resolve")), HoverRule("_", Strategy("nabl2--editor-hover"))]
+    )
+  , Language("", [OnSave(Strategy("generate-aterm"), None())])
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Generate\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Generate ATerm\""), Strategy("generate-aterm"), [])
+          , Action(String("\"Generate Combined ATerm\""), Strategy("generate-combined-aterm"), [])
+          ]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Evaluate\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Evaluate Test\""), Strategy("editor-evaluate-traditional"), [])
+          , Action(String("\"Evaluate Test (Concurrent)\""), Strategy("editor-evaluate-concurrent"), [])
+          , Separator()
+          , Action(String("\"Evaluation Pair\""), Strategy("editor-evaluation-pair"), [])
+          ]
+        )
+      ]
+    )
+  , Colorer(
+      " Default, token-based highlighting"
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), AttributeRef("default"))
+      , ColorRule(Token(TK_STRING()), AttributeRef("blue"))
+      , ColorRule(Token(TK_NUMBER()), AttributeRef("darkgreen"))
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "230"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(
+          Sort("RuleLabel")
+        , Attribute(ColorRGB("0", "0", "139"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("ConstraintId")
+        , Attribute(ColorRGB("0", "0", "109"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("NamespaceId")
+        , Attribute(ColorRGB("108", "113", "196"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("VARID")
+        , Attribute(ColorRGB("101", "123", "131"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Sort("UCID")
+        , Attribute(ColorRGB("7", "54", "66"), NoColor(), BOLD())
+        )
+      , ColorRule(Sort("LCID"), AttributeRef("black"))
+      , ColorRule(
+          Sort("ID")
+        , Attribute(ColorRGB("88", "110", "117"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Sort("Str")
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(Sort("FileID"), AttributeRef("yellow"))
+      , ColorRule(Sort("ModuleID"), AttributeRef("blue"))
+      , ColorRule(
+          Sort("STRID")
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), BOLD())
+        )
+      , ColorRule(
+          Sort("OpId")
+        , Attribute(ColorRGB("7", "54", "66"), NoColor(), BOLD())
+        )
+      , ColorRule(
+          Sort("MessageChars")
+        , Attribute(ColorRGB("181", "137", "0"), NoColor(), NORMAL())
+        )
+      ]
+    )
+  , Colorer(
+      " System colors"
+    , [ ColorDef(
+          "darkblue"
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), ITALIC())
+        )
+      , ColorDef(
+          "blue"
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "mediumblue"
+        , Attribute(ColorRGB("0", "0", "200"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkred"
+        , Attribute(ColorRGB("128", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red"
+        , Attribute(ColorRGB("255", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red2"
+        , Attribute(ColorRGB("240", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red3"
+        , Attribute(ColorRGB("225", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red4"
+        , Attribute(ColorRGB("210", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred"
+        , Attribute(ColorRGB("255", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred2"
+        , Attribute(ColorRGB("240", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred3"
+        , Attribute(ColorRGB("225", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "flred4"
+        , Attribute(ColorRGB("210", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkgreen"
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "green"
+        , Attribute(ColorRGB("0", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "cyan"
+        , Attribute(ColorRGB("0", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "magenta"
+        , Attribute(ColorRGB("255", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "yellow"
+        , Attribute(ColorRGB("255", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "white"
+        , Attribute(ColorRGB("255", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "black"
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "gray"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef("grey", AttributeRef("gray"))
+      , ColorDef(
+          "orange"
+        , Attribute(ColorRGB("255", "165", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkorange"
+        , Attribute(ColorRGB("255", "10", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "pink"
+        , Attribute(ColorRGB("255", "105", "180"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "brown"
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), NORMAL())
+        )
+      , ColorDef("default", Attribute(ColorDefault(), NoColor(), NORMAL()))
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Refactoring\""))
+        , []
+        , [Action(String("\"Rename\""), Strategy("rename-menu-action"), [])]
+        )
+      ]
+    )
+  ]
+)

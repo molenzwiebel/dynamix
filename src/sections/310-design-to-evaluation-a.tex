@@ -1,0 +1,152 @@
+\section{From specification to evaluation}
+So far, we have only discussed the definition aspects of a runtime semantics \ac{DSL}. An equally important part is the ability to transform a specification into some method of running the source programs. Without this capability, the \ac{DSL} would simply be yet another notation for runtime semantics. In this section, we discuss several different approaches for using a specification written in our \ac{DSL} to automatically run source language programs. \\
+
+Broadly speaking, we've established that a formal specification essentially acts as a list of instructions to perform when a certain language construct should be executed. These instructions interact with the runtime environment of the program (such as its memory, variables) and dictate which constructs should be evaluated next, in what order, and how their results are used. Logically, this means that "running" a specification with some source program as input effectively involves repeatedly selecting the appropriate rule to apply, and evaluating all steps for that rule until the program reaches termination. There are multiple ways of doing this, each with their own set of upsides and downsides. A few such solutions include:
+
+\begin{itemize}
+  \item \textbf{A \ac{DSL} interpreter.} A single program takes both a specification and an source program AST as parameters. The interpreter selects the appropriate "entry rule" for the input AST, then (recursively) executes each instruction in the rule.
+  \item \textbf{Automatic interpreter generation.} The specification is used to generate a new interpreter program capable of interpreting a given input source language AST.
+  % \item \textbf{Automatic compiler generation.} The specification is used to generate a new interpreter program capable of compiling some given input source language AST to some compilation target.
+  \item \textbf{A \ac{DSL} meta-interpreter.} A single program takes both a specification and a source program AST as parameters. The interpreter selects the appropriate "entry rule" for the input AST, then traverses the program, substituting each source language construct with the appropriate instructions from the specification. The resulting output is a language-agnostic set of instructions corresponding to the input program, which can subsequently be compiled or interpreted directly. \todo{too vague?}
+\end{itemize}
+
+We will briefly discuss each of these approaches in more detail and compare and contrast them. For each of these, we will use the specification and input from \cref{fig:evaluation_example} to illustrate their different approaches to execution. For every approach, we discuss the \ac{DSL} compilation time (a one-time cost per language), the source program compilation time (a one-time cost per program), and the source program execution time (incurred on every run). We also discuss the complexity of each implementation, but do not attempt to quantify this complexity. \todo{Reword. Discuss bundle size/dependencies?}
+\todo{Snippet necessary?}
+\todo{Discuss complexity of things like interacting with static analysis results?}
+
+\begin{figure}
+  \begin{plain}
+let x = 10;
+if flip then
+  x = 20;
+end
+print x;
+  \end{plain}
+  \begin{plain}
+on Program(stmts):
+  - execute each stmt in `stmts` sequentially
+
+on LetDeclaration(name, value):
+  - let `v` be the result of executing `value`
+  - assert: there is no global variable `name`
+  - assign `v` to the global variable `name`
+
+on Flip(body):
+  - let `v` be a random integer in the range [0, 1]
+  - if `v` is 0 then
+    - execute body
+
+on Assign(name, value):
+  - let `v` be the result of executing `value`
+  - assert: there is a global variable `name`
+  - assign `v` to the global variable `name`
+
+on IntLiteral(value):
+  - yield the 32-bit signed representation of `value`
+
+on Variable(name):
+  - assert: there is a global variable `name`
+  - yield the value of global variable `name`
+
+on Print(value):
+  - let `v` be the result of executing `value`
+  - let `str` be the result of converting `v` to a string representation
+  - output `str` to standard output, followed by a newline character (0x0A, '\n')
+  \end{plain}
+  \caption{An input program (top) and dynamic specification (bottom) for a fictional language. The snippet non-deterministically prints either 10 or 20. The specification is in a fictional language with capabilities as discussed in \cref{sec:design_anatomy}.}
+  \label{fig:evaluation_example}
+\end{figure}
+
+\subsection{Direct interpretation}
+Arguably the simplest choice to turn a specification into a program capable of running source programs is direct interpretation. Here, a program takes in an abstract representation of the specification (e.g. a (desugared) AST), and executes rules from this specification based on some source language input until termination. The ability to interpret dynamic specification \ac{DSL} instructions is enough to run source language programs, since these instructions effectively function as an interpreter (albeit in formal notation) for the source language. This is the approach taken by PLT Redex \cite{MatthewsFFF04} (further discussed in \cref{ch:related_work}).\\
+
+\noindent
+\textbf{\ac{DSL} compilation time}: \texttt{N/A}. A single \ac{DSL} runtime is capable of executing every specification on every program.\\
+\textbf{Source program compilation time}: \texttt{N/A}. The source program is interpreted and cannot be compiled ahead-of-time.\\
+\textbf{Source program execution time}: \texttt{--}. The program effectively performs double interpretation, since it interprets the \ac{DSL}, which in turn functions as an interpreter for the target language. These multiple layers of indirection negatively effect the runtime performance.\\
+\textbf{Implementation complexity}: \texttt{low}. One only needs to write an interpreter for the \ac{DSL}.
+
+\subsection{Interpreter generation}
+A method of combating the performance issues caused by direct interpretation is to compile a specification to a specialized interpreter ahead of time. Doing so removes a level of indirection, directly increasing performance and allowing the interpreter to take advantage of compiler or runtime optimizations for the platform on which it runs. This is the approach taken by DynSem \cite{VerguNV15} (further discussed in \cref{ch:related_work}). \Cref{fig:evaluation_example_compiled_interpreter} shows an example of an automatically generated interpreter based on the specification in \Cref{fig:evaluation_example}.\\
+
+\noindent
+\textbf{\ac{DSL} compilation time}: \texttt{-}. The specification must be compiled to a specialized interpreter, incurring both generation time and potential compilation time (depending on the target platform).\\
+\textbf{Source program compilation time}: \texttt{N/A}. The source program is interpreted and cannot be compiled ahead-of-time.\\
+\textbf{Source program execution time}: \texttt{-}. The source program is interpreted, which incurs overhead over compiled programs. Little to no compiler optimizations can be performed on the source program. \\
+\textbf{Implementation complexity}: \texttt{mid-low}. One needs to write program capable of generating the interpreter, as well as runtime libraries to support the generated interpreter. Exact complexity depends on the interpreter target platform.
+
+\begin{figure}
+  \begin{minted}[linenos,frame=single,framesep=2pt]{rust}
+fn eval(insn: Insn) -> Value {
+  match insn {
+    Insn::Program(stmts) => stmts.iter().for_each(|insn| eval(insn)),
+    Insn::LetDeclaration(name, value) => {
+      let v = eval(value);
+      if globals.contains_key(&name) {
+        raise_error("Assertion failed: there is no global variable `name`")
+      }
+      globals[name] = v;
+    },
+    Insn::Assign(name, value) => {
+      let v = eval(value);
+      if !globals.contains_key(&name) {
+        raise_error("Assertion failed: there is a global variable `name`")
+      }
+      globals[name] = v;
+    },
+    Insn::IntLiteral(value) => return Value::SInt32(value),
+    Insn::Flip(body) => {
+      if random_bool() {
+        eval(body);
+      }
+    }
+    Insn::Variable(name) => {
+      if !globals.contains_key(&name) {
+        raise_error("Assertion failed: there is a global variable `name`")
+      }
+      return globals[value]
+    },
+    Insn::Print(value) => {
+      let v = eval(value);
+      println!("{}", v);
+    }
+  }
+}
+  \end{minted}
+  \caption{A fictional compilation of the specification in \cref{fig:evaluation_example}. The instructions in the specification rules have been converted into imperative statements that perform these operations.}
+  \label{fig:evaluation_example_compiled_interpreter}
+\end{figure}
+
+% \subsection{Compiler generation}
+% This is an approach similar to interpreter generation, but instead generates a program capable of compiling source programs to some compiled format (e.g. direct machine code, virtual machine bytecode). While more complex, it increases execution speed since the source language now directly runs on the target platform and is able to take advantage of compiler and runtime optimizations.
+
+% \noindent
+% \textbf{\ac{DSL} compilation time}: \texttt{-}. The specification must be compiled to a specialized interpreter, incurring both generation time and potential compilation time (depending on the target platform).\\
+% \textbf{Source program compilation time}: \texttt{-}. The source program needs to be compiled to the target platform.\\
+% \textbf{Source program execution time}: \texttt{++}. The source program is directly compiled for the target platform and incurs little overhead. \\
+% \textbf{Implementation complexity}: \texttt{high}. Automatically generating a compiler capable of producing high-performance code is usually a complex task, although the exact complexity depends on the target platform.
+
+\subsection{Meta-interpretation}
+A final approach to executing a specification is to "meta-interpret" it. That is, the specification is symbolically executed on a given source language input term (similar to the interpretation approach), but any operations that would affect the runtime state are instead recorded and deferred. Effectively, this replaces each source language construct with the appropriate (lower-level) instructions contained in the dynamic specification. The resulting output can then be interpreted or compiled. An example of meta-interpreting the example in \cref{fig:evaluation_example} can be seen in \cref{fig:evaluation_example_meta_interpreted}. One benefit of this approach is that it is still possible to debug the specification without sacrificing on runtime performance. \\
+
+\noindent
+\textbf{\ac{DSL} compilation time}: \texttt{N/A}. A single \ac{DSL} runtime is capable of meta-interpreting every specification on every program.\\
+\textbf{Source program compilation time}: Depends on whether the resulting lower-level instructions are interpreted (\texttt{N/A}) or compiled (\texttt{-}).\\
+\textbf{Source program execution time}: Depends on whether the resulting lower-level instructions are interpreted (\texttt{-}) or compiled (\texttt{+}). \\
+\textbf{Implementation complexity}: \texttt{high}. This approach effectively doubles the work involved, since one must write an interpreter for the specification, as well as either an interpreter or a compiler for the resulting output.
+
+\begin{figure}
+  \begin{plain}
+let `v` be the 32-bit signed integer 10
+assign `v` to the global variable `x`
+let `v1` be a random integer in the range [0, 1]
+if `v1` is 0:
+  let `v2` be the 32-bit signed integer 20
+  assign `v2` to the global variable `x`
+let `v3` be the value of the global variable `x`
+let `str` be the string representation of `v3`
+output `str` to standard output, followed by a newline character (0x0A, '\n')
+  \end{plain}
+  \caption{The result of meta-interpreting the source program in \cref{fig:evaluation_example}. The output is a program where the original source language constructs have been replaced with the appropriate instructions from the specification.}
+  \label{fig:evaluation_example_meta_interpreted}
+\end{figure}
