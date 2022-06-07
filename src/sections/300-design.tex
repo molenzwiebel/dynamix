@@ -9,7 +9,25 @@ In this chapter, we discuss a set of features that a \ac{DSL} for runtime semant
 
 Within this chapter, we use the term \textbf{source language} to refer to the language under compilation (i.e. the language for which a runtime semantics specification is written). Unless otherwise specified, the term \textbf{\ac{DSL}} refers to the \ac{DSL} for dynamic specification whose design we are considering. The term \textbf{rule} refers to the runtime semantics for a single source language construct (e.g. a single rule may define the behavior of integer multiplication). The term \textbf{specification} refers to the set of all runtime semantics \textbf{rule}s (for the source language) written in the \ac{DSL}.
 
-\section{}
+\section{Visualizing our objectives}
+\label{sec:design_requirements}
+\todo{do not number this subsection maybe?}
+\todo[inline]{we need to state this somewhere, but not entirely sure if a new subsection is the right place to do it. Moving it to before the start of the sections reads better but requires us to be more brief(?). Other parts of this chapter need to be touched up to consider the intro either way, and refer back to the design goals}
+Before we start the design process of our \ac{DSL}, we must first consider exactly \textit{what} we desire to achieve. Even if we do not yet have any idea how exactly our \ac{DSL} will manifest itself, we can use the desired outcome as a way to guide the design process. To do so, let us first restate the design objectives we briefly discussed in the introduction (\cref{ch:introduction}) and elaborate on them. \\
+
+\subsubsection*{Easy to use for language designers}
+\todo{better goal title}
+Where possible, our \ac{DSL} should have some form of resemblance to existing formalisms and conventions for dynamic specifications. Such resemblances will help users familiarize themselves by giving them the ability to associate constructs within the \ac{DSL} with concepts and approaches that they already understand.\todo{additionally it might help since existing literature would become (partially) applicable?}
+
+\subsubsection*{Applicable to a wide variety of language paradigms}
+Our \ac{DSL} should offer abstractions capable of handling a large number of programming paradigms. Users should be able to implement their language of choice without being limited by a lack of \ac{DSL} features. This is not to say that \textit{every} language should be supported, nor that every language should be efficiently executed. Instead, features within the \ac{DSL} should be chosen and designed in a way where they do not unnecessarily limit the general applicability of the \ac{DSL}.
+
+\subsubsection*{Focus on runtime performance}
+\todo{better goal title}
+Specifications written in our \ac{DSL} should lead to a program capable to executing source language programs with speeds within an order of magnitude compared to a manual (optimized) implementation. Desiring a fast runtime for a language should be a valid motivator for writing a language specification using our \ac{DSL}.\todo{this paragraph is bad, reword}
+
+\subsubsection*{Direct integration with the Spoofax language workbench}
+Our \ac{DSL} should have a tight and idiomatic integration with other meta-languages in the Spoofax language workbench. Users should be able to easily write dynamic specifications for their existing Spoofax projects, without overhauling parts of their projects. The design and behavior of the language should, where applicable, be consistent with other Spoofax meta-languages to allow for easier adoption.
 
 \section{The anatomy of a formal runtime semantics specification}
 \label{sec:design_anatomy}
@@ -214,7 +232,7 @@ Other control flow can be implemented in a similar way. For example, exceptions 
 \todo[inline]{the following paragraph needs a bit less opinion and a bit more segue into finalizing the section}
 As far as I am aware, no current language specification makes use of continuations as an abstraction over control flow, despite their promising abilities. Perhaps the notational overhead of continuations, or an increase in cognitive complexity when reading the specification, makes them an unattractive abstraction. This is not too surprising, given that the main benefit of modeling control flow through continuations is that it allows for more efficient execution (if one were to directly convert a specification to a language implementation), and that it allows for better defined mathematical semantics, neither of which are usually priorities for a formal language specification. \\
 
-However, a continuation based approach to control flow lends itself excellently to our \ac{DSL}. Efficient compilation of programs that use continuations is a well-understood problem\footnote{The excellent book "Compiling with Continuations" by Andrew W. Appel \cite{Appel1992} is a good introduction to techniques for compilation using \acf{CPS}.}, and a structural approach to continuations aided by effective static analysis will relieve some of the cognitive complexity of working with continuations.
+However, a continuation based approach to control flow lends itself excellently to our \ac{DSL}. Efficient compilation of programs that use continuations is a well-understood problem\footnote{The book "Compiling with Continuations" by Andrew W. Appel \cite{Appel1992} is an excellent introduction to techniques for compilation using \acf{CPS}.}, and a structural approach to continuations aided by effective static analysis will relieve some of the cognitive complexity of working with continuations.
 
 %   - How does one allow complex non-linear control flow?
 %     - Abstract over control-flow itself!
