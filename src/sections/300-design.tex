@@ -148,7 +148,7 @@ The natural approach to implementing control flow in a dynamic specification is 
     \RightLabel{\;\;\;\textsc{[While-True]}}
     \UnaryInfC{$G,E,S \vdash \texttt{while }  e_1 : b_1 : \_, S_3, \_ $}
   \end{prooftree}
-  \caption{Control flow as seen in the ChocoPy reference manual \cite{PadhyeSH19}. The appropriate rule is chosen based on the evaluation of the condition expression $e_1$. The \textsc{[While-True]} case recurses as a means of performing multiple iterations.}
+  \caption{Control flow as seen in the ChocoPy reference manual \cite{PadhyeSH19}. The appropriate rule is chosen based on the evaluation of the condition expression $e_1$. The \textsc{[While-True]} case uses recursive invocations to the same rule as a means of performing multiple loop iterations.}
   \label{fig:chocopy_conditional_example}
 \end{figure}
 

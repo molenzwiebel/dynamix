@@ -24,6 +24,12 @@
 \usepackage{soul}
 % \usepackage{syntax}
 
+% Grammar references in cref
+\crefname{floatgrammar}{Grammar}{Grammars}
+
+% textbt = bold texttt
+\newcommand{\textbt}[1]{\textbf{\texttt{#1}}}
+
 % Prevent footnotes from splitting across pages.
 \interfootnotelinepenalty=100000
 
@@ -64,6 +70,7 @@
 \include{sections/100-introduction}
 \include{sections/200-spoofax}
 \include{sections/300-design}
+\include{sections/350-design-choices}
 \include{sections/400-tim}
 \include{sections/500-dynamix}
 \include{sections/600-case-studies}
