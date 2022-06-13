@@ -553,14 +553,14 @@ One aspect we will briefly discuss is how the Tim interpreter performs tail call
 module foo
 
 strategies
-  // while implemented in native code
+  // `while` implemented directly in Java
   external native-while(c, s|)
 
 rules
   // the while from the Stratego standard library
   while(c, s) = try(c; s; while(c, s))
 
-  // not tail calling, since while is recursive
+  // not tail calling, since while is implemented recursively
   interpret-naive = while(not(?Exit()); eval-expr)
 
   // tail calling, uses native while
