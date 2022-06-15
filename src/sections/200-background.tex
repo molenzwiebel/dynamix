@@ -46,7 +46,7 @@ These explicit definitions are generally written in either natural language or f
   \label{fig:background_c_snippet}
 \end{figure}
 
-Despite explicit definition documents being the most common, they are not the only form of language specification. Two other common forms are that of a reference implementation, in which a single implementation of a language is designated to be the "correct" implementation from which the behavior should be derived, as well as that of a designated test suite for the language, which provides behavior in terms of examples and their expected outcome. Many languages also combine these. For example, Test262\footnote{\url{https://github.com/tc39/test262}} is an official test suite for conformance against the ECMAScript specification \cite{ecma1999262}.\\
+Despite explicit definition documents being the most common, they are not the only form of language specification. Two other common forms are that of a reference implementation, in which a single implementation of a language is designated to be the "correct" implementation from which the behavior should be derived, as well as that of a designated test suite for the language, which provides behavior in terms of examples and their expected outcome. Many languages also combine these: Test262\footnote{\url{https://github.com/tc39/test262}} is an official test suite for conformance against the ECMAScript specification \cite{ecma1999262}.\\
 
 \todo[inline]{section about how not every language has a spec, how they often form only after the language is already in use? cite from algol?}
 
@@ -54,15 +54,15 @@ Official language specifications are common in programming languages, but not ub
 
 \begin{itemize}
   \item \textbf{JavaScript}: Formalized in ECMA-262 \cite{ecma1999262}. Defines dynamic semantics using natural language.
-  \item \textbf{HTML/CSS}: Formalized by W3C as HTML 5.3 \cite{Moon:21:H} and CSS2 \cite{Lilley:08:CSS}, among others. Dynamic semantics not applicable.
+  \item \textbf{HTML/CSS}: Formalized by the W3C across several different specifications, including HTML 5.3 \cite{Moon:21:H} and CSS2 \cite{Lilley:08:CSS}. Dynamic semantics not applicable.
   \item \textbf{Python}: No official specification.
-  \item \textbf{SQL}: First formalized as ISO/IEC 9075:1992 \cite{ISO:1992:IITa}. Several dialects exist. Dynamic semantics not applicable.
+  \item \textbf{SQL}: First formalized as ISO/IEC 9075:1992 \cite{ISO:1992:IITa}. Several (incompatible) dialects exist. Dynamic semantics not applicable.
   \item \textbf{Java}: Formalized per language version, most recently as "The Java Language Specification, Java SE 18 Edition" \cite{java_se_18} and "The Java Virtual Machine Specification, Java SE 18 Edition" \cite{jvm_se_18} for the Java language and virtual machine, respectively. Defines dynamic semantics using natural language.
   \item \textbf{TypeScript}: No official specification.
   \item \textbf{C\#}: First formalized as ISO/IEC 23270:2003 \cite{ISO:2003:IIIb}. Defines dynamic semantics using natural language.
-  \item \textbf{Bash/Shell}: Formalized as IEEE 1003.1-2008 \cite{8277153} as part of POSIX. Defines dynamic semantics using natural language.
+  \item \textbf{Bash/Shell}: Base feature set formalized as part of the POSIX standards family in IEEE 1003.1-2008 \cite{8277153}. Defines dynamic semantics using natural language.
   \item \textbf{\Cplusplus}: First formalized as ISO/IEC 14882:1998 \cite{ISO:1998:IIP}. Defines dynamic semantics using natural language.
-  \item \textbf{PHP}: Ongoing efforts to write a specification\footnote{\url{https://github.com/php/php-langspec}}. Current efforts define dynamic semantics using natural language.
+  \item \textbf{PHP}: Efforts ongoing to write a specification\footnote{\url{https://github.com/php/php-langspec}}. Current efforts define dynamic semantics using natural language.
 \end{itemize}
 
 \section{The Spoofax language workbench}
@@ -379,4 +379,4 @@ In an effort to remedy these issues, the Dynamix meta-language\footnote{Not to b
 
 Despite this, the Dynamix language seemed promising. In late 2020, Eelco Visser and Andrew Tolmach started exploratory work on "Dynamix V2". The intent was to retain most of the Dynamix language, but to compile to a new continuation-based target language. If the resulting target language was able to be efficiently compiled or interpreted, this approach could resolve the runtime performance issues that DynSem suffered from. DynSem's other main problem, that of control flow, could also be resolved by using continuations, as evident from Bruin's work.\\
 
-The Dynamix language discussed in this thesis\footnote{Dynamix as presented in this paper should really be called Dynamix v2.5. However, since the version of Dynamix designed by Bruin never made it into the Spoofax language workbench, the Dynamix presented in this paper is the first publicly usable iteration of the meta-language. In order to avoid potential confusion for Spoofax users, we decided that it would be more appropriate to call the language Dynamix, without a version number.} is a spiritual successor to these efforts by Visser and Tolmach. Many components were revamped in order to generalize their experimental prototype to a large array of languages and programming paradigms, and to fully integrate the resulting product in the Spoofax language workbench. The remainder of this thesis discusses these efforts and shows that the resulting meta-language is indeed capable of resolving many of DynSem's original issues.
+The Dynamix language discussed in this thesis\footnote{Dynamix as presented in this paper should really be called Dynamix v2.5. However, since the version of Dynamix designed by Bruin never made it into the Spoofax language workbench, the Dynamix presented in this paper is the first publicly usable iteration of the meta-language. In order to avoid potential confusion for Spoofax users, we decided that it would be more appropriate to call the language Dynamix, without a version number.} is a spiritual successor to these efforts by Visser and Tolmach. Many components were revamped in order to generalize their experimental prototype to a large array of languages and programming paradigms, and to fully integrate the resulting product in the Spoofax language workbench. The remainder of this thesis discusses these efforts and shows that the resulting meta-language is indeed capable of resolving many of DynSem's original issues. We should stress that no previous knowledge of the Dynamix meta-language as it appeared in Bruin's thesis is required: we will introduce the language from scratch.

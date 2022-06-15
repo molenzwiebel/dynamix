@@ -104,7 +104,63 @@ Based on the two discussed specification examples, we can derive the following c
 %     - Effectively meta-interpreting the source language (all possible paths).
 %     - Meta-interpreting requires some output language/data format.
 
-\input{sections/310-design-to-evaluation-b.tex}
+\section{From specification to evaluation}
+\label{sec:design_evaluation}
+So far, we have only discussed the definition aspects of a runtime semantics \ac{DSL}. An equally important part is the ability to transform a specification into some method of running the source programs. Without this capability, the \ac{DSL} would simply be yet another notation for runtime semantics. In this section, we discuss several different approaches for using a specification written in our \ac{DSL} to automatically run source language programs. \\
+
+Broadly speaking, we've established that a formal specification essentially acts as a list of instructions to perform when a certain language construct should be executed. These instructions interact with the runtime environment of the program (such as its memory, variables) and dictate which constructs should be evaluated next, in what order, and how their results are used. Logically, this means that "running" a specification with some source program as input effectively involves repeatedly selecting the appropriate rule to apply, then evaluating all steps for that rule until the program reaches termination. There are multiple ways of doing this, each with their own set of upsides and downsides. The most common solutions include:
+
+\todo[inline]{revise/review naming of these approaches}
+\begin{itemize}
+  \item \textbf{A \ac{DSL} interpreter.} A single program takes both a specification and a source program AST as parameters. The interpreter selects the appropriate "entry rule" for the input AST, then (recursively) executes each instruction in the rule.
+  \item \textbf{Automatic interpreter/compiler generation.} The specification is used to generate a specialized interpreter or compiler for the target language. The resulting program can be used to directly run or compile source programs.
+  \item \textbf{A \ac{DSL} meta-interpreter.} A single program takes both a specification and a source program AST as parameters. The interpreter selects the appropriate "entry rule" for the input AST, then traverses the program, substituting each source language construct with the appropriate instructions from the specification. The resulting output is a language-agnostic set of instructions corresponding to the input program, which can subsequently be compiled or interpreted directly.
+\end{itemize}
+
+\noindent Let us briefly discuss each of these approaches and consider their strengths and weaknesses in more detail. 
+
+\subsubsection*{Direct interpretation} Arguably the simplest approach is to write a direct interpreter for the \ac{DSL}. This involves using an input (desugared, type checked) \ac{AST} to guide which rule(s) should be executed, with each specification instruction executed in-order. Since a specification is effectively a formal description of an interpreter for the language, this approach typically is not very performant due to the "nested" interpretation (the interpreter interprets the \ac{DSL}, which in turn interprets the source language). However, this approach is very portable (a single interpreter is capable of running every specification on every source snippet) and generally easy to implement and debug. This is the approach taken by PLT Redex \cite{MatthewsFFF04}  (further discussed in \cref{ch:related_work}).
+
+\subsubsection*{Specialized interpreter/compiler generation} The abstract specification is transpiled\footnote{Source-to-source compilation between two languages of a similar abstraction level.} to a interpreter or compiler in a concrete programming language. The resulting program can be used to directly run source ASTs. This is often a more performant approach to running the specification, as the overhead of the meta-language largely disappears. An example of a project that uses this approach is the DynSem \cite{VerguNV15} dynamic specification language, which automatically translates a specification into an AST-based interpreter running on the Java virtual machine (we further discuss DynSem in \cref{ch:related_work}). The final performance of the generated interpreter or compiler depends largely on how it is implemented. For example, subsequent work by Vergu et al. \cite{VerguV18} on the same DynSem framework demonstrated performance increases of up to 15x by improving the generated interpreter.
+
+\subsubsection*{Meta-interpretation} The final approach we will discuss is that of \textit{meta-interpretation}. This approach lends itself from the observation that, due to the nature of a dynamic specification, a program where every source construct is replaced with the body of the appropriate dynamic specification rule behaves exactly the same. After all, the behavior of the source program is defined through the specification. As we will discuss later, this is the approach used by Dynamix for executing source programs. An example of this approach can be seen in \cref{fig:meta_interpretation}.
+
+The meta-interpretation technique is quite similar to symbolic execution\footnote{A method of executing a program in an abstract manner, where every possible behavior of the source program is considered. Originally introduced by James C. King \cite{King76:0}, it is a common analysis technique used for testing, verifying, and debugging programs. Unlike symbol execution, meta-interpretation does not consider symbolic values and only evaluates all (potential) program control flow.}, but unlike symbolic execution it only considers rule selection and recursive rule invocation based on the input source language \ac{AST}. Any operations that require runtime state (such as access to memory, variables, or conditional jumps) are deferred. The resulting output is effectively the \textit{application} of the specification on the specific input. One could also consider this process as \textit{compiling} a source AST to a collection of \ac{DSL} instructions. For the example in \cref{fig:meta_interpretation}, observe that the numeric literal \texttt{10} has been inlined into the declaration for \texttt{LetDeclaration}, but that all memory operations have been retained.\todo{might make more sense to talk about treating the spec as rewrite rules instead of this weird analogue to symbolic execution}
+
+The benefit to the meta-interpretation technique is that it is able to generically transform every source language for which a specification exists into a singular language-agnostic format. The resulting format can be directly interpreted or compiled into a target program. Since this language-agnostic format is common between all possible specifications and source languages, it is comparatively simpler to efficiently compile or run the program (compared to the interpreter generation approach, which cannot make any assumptions about the language which it is interpreting).
+
+\begin{figure}
+  \begin{plain}
+on Program(stmts):
+  - execute each stmt in `stmts` sequentially
+
+on LetDeclaration(name, value):
+  - let `v` be the result of executing `value`
+  - assert: there is no global variable `name`
+  - assign `v` to the global variable `name`
+
+on IntLiteral(value):
+  - yield the 32-bit signed representation of `value`
+
+on Print(value):
+  - let `v` be the result of executing `value`
+  - let `str` be the result of converting `v` to a string representation
+  - output `str` to standard output, followed by a newline character (0x0A, '\n')
+  \end{plain}
+  \begin{plain}
+let x = 10;
+print x;
+  \end{plain}
+\begin{plain}
+let `v` be the 32-bit signed integer 10
+assign `v` to the global variable `x`
+let `v1` be the value of the global variable `x`
+let `str` be the string representation of `v1`
+output `str` to standard output, followed by a newline character (0x0A, '\n')
+\end{plain}
+  \caption{A dynamic specification (top) and input program (middle) for a fictional language. The bottom program represents the result of meta-interpreting the source program, yielding a new program where every source language construct has been replaced with the appropriate instructions in the specification language.}
+  \label{fig:meta_interpretation}
+\end{figure}
 
 \section{Considering control flow}
 \label{sec:design_control_flow}

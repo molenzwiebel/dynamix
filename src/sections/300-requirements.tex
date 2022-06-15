@@ -1,0 +1,32 @@
+% !TEX root = ../document.tex
+
+\chapter{Objectives}
+\label{ch:design_requirements}
+Now that we have discussed all the necessary background, let us elaborate on the objectives of the Dynamix project as introduced in \cref{ch:introduction}. The remainder of this thesis will use these objectives as pillars to guide the design and implementation of the Dynamix project.
+
+\section{Overarching goals}
+The primary goal of the Dynamix project is to \textbf{provide a widely applicable and performant meta-language for the specification of dynamic semantics within the Spoofax language workbench}. Dynamix must offer all the infrastructure required to implement dynamic specifications within Spoofax, with a level of support, stability, and integration that is to be expected from a first-class Spoofax meta-language.\\
+
+A secondary goal of the project is that \textbf{Dynamix should strive to unify the traditionally separate domains of formal language specifications and language implementations}. Dynamix inherits this goal from the language that it supersedes, DynSem \cite{VerguNV15}. Where possible, Dynamix should operate at an abstraction level that allows it to be treated as a formal specification, with the additional benefit that a language implementation can be directly derived from this specification. In cases where this abstraction level may hinder the usability or applicability of the Dynamix meta-language, preference should be given to the primary goal of the project.
+
+\section{Concrete requirements}
+Based on the aforementioned overarching goals, we now discuss several concrete requirements for both the Dynamix meta-language, as well as its implementation within the Spoofax language workbench.
+
+\todo[inline]{review, add more, elaborate?}
+
+\subsection*{Simplicity through resemblance}
+Where possible, the Dynamix \ac{DSL} should have some form of resemblance to existing formalisms and conventions for dynamic specifications. Such resemblances will help users familiarize themselves by giving them the ability to associate constructs within the \ac{DSL} with concepts and approaches that they already understand. A similarity with existing formalisms additionally helps establish a close tie with formal specifications, supporting the secondary goal that a Dynamix specification should be similar to a formal language specification.
+
+\subsection*{Applicable to a wide variety of language paradigms}
+The Dynamix \ac{DSL} should offer abstractions capable of handling a large number of programming paradigms. Users should be able to implement their language of choice without being limited by a lack of \ac{DSL} features. This is not to say that \textit{every} language should be supported, nor that every language should be efficiently executed. Instead, features within the \ac{DSL} should be chosen and designed in a way where they do not unnecessarily limit the general applicability of the \ac{DSL}.\todo{last two lines maybe a bit too casual?}
+
+\subsection*{Must be able to yield a performant runtime}
+\todo[inline]{better goal title}
+Desiring a fast runtime for a language should be a valid motivator for writing a language specification using the Dynamix \ac{DSL}. The Dynamix project must be designed in a way where it is possible to produce language runtimes that perform within an order of magnitude compared to a hand-written implementation. The initial implementation, as discussed in this thesis, does not have to perform at this level, but there should be no technical limitations preventing a performant runtime from being created.
+
+\subsection*{High quality integration within the Spoofax workbench}
+\todo[inline]{better goal title}
+The Dynamix project should have a tight and idiomatic integration with other meta-languages in the Spoofax language workbench. Users should be able to easily write dynamic specifications for their existing Spoofax projects, without overhauling parts of their projects. The design and behavior of the language should, where applicable, be consistent with other Spoofax meta-languages to allow for easier adoption.
+
+\section{Dynamix project structure}
+\todo[inline]{It might be interesting/worth considering to present some flow diagram/explanation here of the exact Dynamix architecture; that is, the input AST, specification, compilation artifacts, expected workflow, etc. However, doing that here clashes a bit with the tone in ch4.}
