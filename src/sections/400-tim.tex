@@ -16,8 +16,6 @@ Tim as an intermediate representation centers around \acf{CPS} as a way of model
 
 Let us first discuss the grammar of Tim. Despite Tim being an \ac{IR} (and therefore not a language directly designed to be used by users), it has a properly defined syntax. This representation allows a user to inspect the output of a Dynamix compilation, write code directly in the target representation (which may be useful if Dynamix does not expose the necessary facilities to do so), and will also help us consider the semantics of Tim without needing to resort to abstract representations of terms. Note that this is unlike the \ac{CPS} \ac{IR} from "Compiling with Continuations" \cite{Appel1992} that Tim is based on, which only considers the algebraic signature of the IR and has no formal syntax definition. \Cref{gr:tim} shows the full grammar for the Tim \ac{IR}.\\
 
-\newcommand{\prodname}[1]{{\scriptstyle <}\textit{#1}{\scriptstyle >}}
-
 \begin{grammar}[The grammar of the Tim intermediate representation.][][gr:tim]
   \firstcase{\prodname{program}}{\prodname{exp}}{}\\
 
@@ -256,6 +254,7 @@ Finally, conditional primitives are simply invoke the primitive function and bra
 \end{prooftree}
 
 \subsection{Executing continuations to completion}
+\label{subsec:tim_continuation_iteration}
 Now that we know the semantics of individual expressions, let us consider how to execute a Tim program to completion. To execute some program $ p $ (which consists of a top-level expression), we simply iteratively apply the appropriate dynamic semantics rule to yield a continuation $ C $. If this continuation is $ cont(S', e') $, we re-apply the appropriate rule for $ e' $. We halt once we reach the $ exit() $ continuation. We use the notation $ S, H \vdash e \Rightarrow C $ to indicate this operation, using the double arrow to indicate that we repeatedly apply the relation.
 
 \begin{prooftree}
@@ -360,7 +359,7 @@ Now let us discuss the semantics of some of the primitives available to Tim prog
 \begin{prooftree}
   \AxiomC{$ r = H[x] $}
   \noLine
-  \UnaryInfC{$ v = r(k) $}
+  \UnaryInfC{$ v = r[k] $}
   \RightLabel{\textsc{Prim-Record Read}}
   \UnaryInfC{$\textsc{Primitive}(H, \textbt{\#record-read}, \#record(x), str(k)) = v, H$}
 \end{prooftree}
@@ -546,7 +545,7 @@ In order to run Tim programs, the Spoofax implementation of Tim ships with an in
 
 Stratego was chosen as an implementation language because it has direct integrations with most other meta-languages within the Spoofax language workbench. This allows it to be invoked from other parts of the language workbench and allows users to easily extend the language with new primitives by invoking the appropriate Stratego strategies. Since Tim reference implementation itself is also a Spoofax project, the Tim interpreter is also able to take advantage of the static type checking available in Stratego 2\footnote{Stratego 2 is a partial rewrite of the Stratego language and introduces incremental compilation and gradual typing, among other things. At the time of writing, Stratego 2 is still in development and there have yet to be any publications.}. The Tim interpreter directly implements the dynamic semantics described in \cref{sec:tim_runtime_semantics}. As such, we will refrain from discussing the entire implementation in this thesis\footnote{If the reader is interested, the code for the Tim interpreter is available online at \url{https://github.com/metaborg/spoofax-pie/blob/develop/lwb/metalang/tim_runtime/tim_runtime.spoofax2/trans}}.\\
 
-One aspect we will briefly discuss is how the Tim interpreter performs tail calls. Neither Stratego, nor Java (to which Stratego compiles), have native support for tail calls. Since Tim is a \ac{CPS}-based language, it is imperative that it supports proper tail calls. A lack of tail call support would mean that any non-trivial Tim program will eventually run out of stack space. Tim implements tail calls very similar to the iterative approach used in its dynamic specification. Evaluating any expression will yield a continuation term, which indicates where to continue. These terms are evaluated in a \texttt{while} strategy until the program reaches termination. One particularity is that the \texttt{while} strategy from the Stratego standard library, as seen in \cref{fig:tim_interpreter_cps}, uses recursion to perform iteration. As a result, the \texttt{interpret-naive} strategy is not tail calling despite appearing to be. A custom native strategy\footnote{A Stratego strategy implemented directly in Java.} is needed to actually achieve proper tail calls.
+One aspect we will briefly discuss is how the Tim interpreter performs tail calls. Neither Stratego, nor Java (to which Stratego compiles), have native support for tail calls. Since Tim is a \ac{CPS}-based language, it is imperative that it supports proper tail calls. A lack of tail call support would mean that any non-trivial Tim program will eventually run out of stack space. Tim implements tail calls very similar to the iterative approach defined in \cref{subsec:tim_continuation_iteration}. Evaluating any expression will yield a continuation term, which indicates where to continue. These terms are evaluated in a \texttt{while} strategy until the program reaches termination. One particularity is that the \texttt{while} strategy from the Stratego standard library, as seen in \cref{fig:tim_interpreter_cps}, uses recursion to perform iteration\footnote{This is likely an oversight since a similar strategy, \texttt{repeat}, does not suffer from this issue. A bug was filed to correct the issue: \url{https://github.com/metaborg/stratego/issues/34}.}. As a result, the \texttt{interpret-naive} strategy from the same figure is not tail calling despite appearing to be. A custom native strategy\footnote{A Stratego strategy implemented directly in Java.} is needed to actually achieve proper tail calls.
 
 \begin{figure}
   \begin{stratego*}{firstline=3,firstnumber=1}

@@ -22,6 +22,7 @@
 \usepackage{formal-grammar}
 \usepackage{lineno}
 \usepackage{soul}
+\usepackage{mdframed}
 % \usepackage{syntax}
 
 % Grammar references in cref
@@ -29,6 +30,8 @@
 
 % textbt = bold texttt
 \newcommand{\textbt}[1]{\textbf{\texttt{#1}}}
+
+\newcommand{\prodname}[1]{{\scriptstyle <}\textit{#1}{\scriptstyle >}}
 
 % Prevent footnotes from splitting across pages.
 \interfootnotelinepenalty=100000
@@ -42,6 +45,7 @@
 \newminted[stratego]{spoofax_lexer.py -O "parseTable=spoofax/stratego/sdf.tbl,esv=spoofax/stratego/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
 \newminted[tim]{spoofax_lexer.py -O "parseTable=spoofax/tim/sdf.tbl,esv=spoofax/tim/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
 \newminted[mat]{spoofax_lexer.py -O "parseTable=spoofax/mat/sdf.tbl,esv=spoofax/mat/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
+\newminted[dynsem]{spoofax_lexer.py -O "parseTable=spoofax/dynsem/sdf.tbl,esv=spoofax/dynsem/editor.esv.af" -x}{linenos,frame=single,framesep=2pt}
 \newminted[plain]{text}{linenos,frame=single,framesep=2pt}
 
 \addbibresource{document.bib}
@@ -68,8 +72,7 @@
 \todo[inline]{Double check figure placement/positions across all chapters}
 
 \include{sections/100-introduction}
-\include{sections/150-requirements}
-\include{sections/200-spoofax}
+\include{sections/200-background}
 \include{sections/300-design}
 \include{sections/350-design-choices}
 \include{sections/400-tim}
