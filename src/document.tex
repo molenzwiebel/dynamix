@@ -31,7 +31,8 @@
 % textbt = bold texttt
 \newcommand{\textbt}[1]{\textbf{\texttt{#1}}}
 
-\newcommand{\prodname}[1]{{\scriptstyle <}\textit{#1}{\scriptstyle >}}
+% \newcommand{\prodname}[1]{{\scriptstyle <}\textit{#1}{\scriptstyle >}}
+\newcommand{\prodname}[1]{\textit{#1}}
 
 % Prevent footnotes from splitting across pages.
 \interfootnotelinepenalty=100000
@@ -54,7 +55,7 @@
 \input{metadata}
 
 \begin{document}
-% \linenumbers
+\linenumbers
 
 \frontmatter
 \thispagestyle{empty}

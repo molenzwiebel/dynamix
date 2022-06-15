@@ -2,12 +2,11 @@
 
 \chapter{\label{ch:design}Designing a \acs{DSL} for runtime semantics}
 \todo{better chapter title?}
+In this chapter, we will discuss the design process for a \ac{DSL} capable of specifying dynamic semantics. In particular, we will consider what features such a \ac{DSL} should conform to in order to be a minimal viable product. We also discuss what its position is compared to other parts of a language definition (e.g. the grammar and static semantics), how it may want to interact with the results of these stages, and what features would help widen the range of source languages the \ac{DSL} might be applicable for.\\
 
-% The ultimate goal\todo{bleh} of this thesis is to design and implement a new \ac{DSL} that functions as a method of defining the runtime semantics of a programming language. This \ac{DSL} should be expressive enough to implement a large variety of languages, while also providing a method of turning a language specification into a program (either an interpreter or a compiler) capable of executing the language.\\
+\todo[inline]{conceptually, this chapter is now a sort of extended background that has some ties into Dynamix, but that might not be the best approach to go for. Discuss}
 
-In this chapter, we discuss a set of features that a \ac{DSL} for runtime semantics should conform to in order to be a minimally viable product. We also discuss what its position is compared to other parts of a language definition (e.g. the grammar and static semantics), how it may want to interact with the results of these stages, and what features would help widen the range of source languages the \ac{DSL} might be applicable for.\\
-
-Within this chapter, we use the term \textbf{source language} to refer to the language under compilation (i.e. the language for which a runtime semantics specification is written). Unless otherwise specified, the term \textbf{\ac{DSL}} refers to the \ac{DSL} for dynamic specification whose design we are considering. The term \textbf{rule} refers to the runtime semantics for a single source language construct (e.g. a single rule may define the behavior of integer multiplication). The term \textbf{specification} refers to the set of all runtime semantics \textbf{rule}s (for the source language) written in the \ac{DSL}.
+Within this chapter, we use the term \textbf{source language} to refer to the language under compilation (i.e. the language for which a runtime semantics specification is written). Unless otherwise specified, the term \textbf{\ac{DSL}} refers to the \ac{DSL} for dynamic specification whose design we are considering (i.e. the Dynamix meta-language). The term \textbf{rule} refers to the runtime semantics for a single source language construct (e.g. a single rule may define the behavior of integer multiplication). The term \textbf{specification} refers to the set of all runtime semantics \textbf{rule}s (for the source language) written in the \ac{DSL}.
 
 \section{The anatomy of a formal runtime semantics specification}
 \label{sec:design_anatomy}
@@ -274,9 +273,6 @@ However, a continuation based approach to control flow lends itself excellently 
 %     - Abstract over control-flow itself!
 %     - Natural result: CPS
 %   - TODO: Discuss holy terms here? Should prob wait until Tim is introduced?
-
-\section{A minimum-viable feature set}
-\label{sec:design_features}
 
 \todo{See content}
 %   - What kind of capabilities should a dynamic specification language support?

@@ -6,3 +6,36 @@
 - Dynamix grammar overview (full grammar?)
 - Type system
 - Holy terms
+
+\begin{grammar}[The grammar of the Dynamix meta-language.][][gr:dynamix]
+  \firstcase{\hypertarget{dyn_expr}{\prodname{expr}}}{\textbt{'}\hyperlink{dyn_source_term}{\prodname{source term}}}{}
+\otherform{\hyperlink{dyn_LID}{\prodname{LID}}}{}
+\otherform{\hyperlink{dyn_GID}{\prodname{GID}}}{}
+\otherform{\textbt{\{ }\hyperlink{dyn_statement}{\prodname{statement}}\textbt{+ \}}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{ label }\hyperlink{dyn_LID}{\prodname{LID}}\textbt{/1:}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{ label }\hyperlink{dyn_LID}{\prodname{LID}}\textbt{/0:}}{}
+\otherform{\hyperlink{dyn_RID}{\prodname{RID}}\textbt{(}\hyperlink{dyn_exprs}{\prodname{exprs}}\textbt{)}}{}
+\otherform{\textbt{int(}\hyperlink{dyn_expr}{\prodname{expr}}\textbt{)}}{}
+\otherform{\textbt{str(}\hyperlink{dyn_expr}{\prodname{expr}}\textbt{)}}{}
+\otherform{\textbt{var(}\hyperlink{dyn_expr}{\prodname{expr}}\textbt{)}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{ + }\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\textbt{fresh-var(}\hyperlink{dyn_ID}{\prodname{ID}}\textbt{)}}{}
+\otherform{\textbt{nameof(}\hyperlink{dyn_expr}{\prodname{expr}}\textbt{)}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{@}\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\textbt{with }\hyperlink{dyn_bindings}{\prodname{bindings}}\textbt{ do }\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\textbt{[}\hyperlink{dyn_exprs}{\prodname{exprs}}\textbt{]}}{}
+\otherform{\textbt{[}\hyperlink{dyn_exprs}{\prodname{exprs}}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{]}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{ ++ }\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\textbt{hole}}{}
+\otherform{\textbt{fun }\hyperlink{dyn_expr}{\prodname{expr}}\textbt{(}\hyperlink{dyn_expr}{\prodname{expr}}\textbt{) = }\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\textbt{fix \{ }\hyperlink{dyn_exprs}{\prodname{exprs}}\textbt{ \}}}{}
+\otherform{\textbt{if \#}\hyperlink{dyn_PID}{\prodname{PID}}\textbt{(}\hyperlink{dyn_exprs}{\prodname{exprs}}\textbt{) then }\hyperlink{dyn_expr}{\prodname{expr}}\textbt{ else }\hyperlink{dyn_expr}{\prodname{expr}}}{}\\
+
+\firstcase{\hypertarget{dyn_exprs}{\prodname{exprs}}}{\epsilon}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}\textbt{, }\hyperlink{dyn_exprs}{\prodname{exprs}}}{}\\
+
+\firstcase{\hypertarget{dyn_statement}{\prodname{statement}}}{\hyperlink{dyn_ID}{\prodname{ID}}\textbt{ <- }\hyperlink{dyn_expr}{\prodname{expr}}}{}
+\otherform{\hyperlink{dyn_expr}{\prodname{expr}}}{}\\
+\end{grammar}
